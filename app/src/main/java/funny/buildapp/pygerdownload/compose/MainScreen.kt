@@ -5,15 +5,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import funny.buildapp.pygerdownload.R
 import funny.buildapp.pygerdownload.ui.theme.PGYER
 
 @Composable
@@ -34,14 +34,48 @@ fun TitleBar(title: String) {
 
 
 @Composable
-fun AppInfoCard(modifier: Modifier = Modifier, id: Int, appName: String, versionName: String) {
+fun AppInfoCard(
+    modifier: Modifier = Modifier,
+    id: Int,
+    appName: String,
+    versionName: String,
+    position: Int
+) {
+    val pos by remember { mutableStateOf(position) }   //0-上  1-左 2-右
+    val leftDp: Dp by derivedStateOf {
+        when (pos) {
+            0, 1 -> 8.dp
+            2 -> 4.dp
+            else -> 8.dp
+        }
+    }
+    val rightDp: Dp by derivedStateOf {
+        when (pos) {
+            0, 2 -> 8.dp
+            1 -> 4.dp
+            else -> 8.dp
+        }
+    }
+    val topDp: Dp by derivedStateOf {
+        when (pos) {
+            0 -> 8.dp
+            1, 2 -> 4.dp
+            else -> 8.dp
+        }
+    }
+    val bottomDp: Dp by derivedStateOf {
+        when (pos) {
+            0 -> 4.dp
+            1, 2 -> 8.dp
+            else -> 8.dp
+        }
+    }
     Column(
         modifier
-            .padding(8.dp)
+            .padding(start = leftDp, end = rightDp, top = topDp, bottom = bottomDp)
             .background(Color.White, RoundedCornerShape(8.dp))
             .fillMaxWidth()
-            .fillMaxHeight()
-            .padding(18.dp),
+            .fillMaxHeight(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -51,14 +85,17 @@ fun AppInfoCard(modifier: Modifier = Modifier, id: Int, appName: String, version
             modifier = Modifier
                 .padding(8.dp)
                 .size(60.dp)
+                .clip(RoundedCornerShape(8.dp))
         )
-        Text(appName, color = Color.Black, fontSize = 22.sp)
+        Text(
+            appName,
+            color = Color.Black,
+            fontSize = 20.sp,
+            modifier = Modifier.padding(bottom = 10.dp)
+        )
+        Text("版本：$versionName", color = Color(0xFF5A5858), fontSize = 14.sp)
+        Text("安装包大小：$versionName", color = Color(0xFF5A5858), fontSize = 14.sp)
         Text("更新时间：$versionName", color = Color(0xFF5A5858), fontSize = 14.sp)
-        Row() {
-            Text("版本：$versionName", color = Color(0xFF5A5858), fontSize = 14.sp)
-            Text(text = "   |  ")
-            Text("安装包大小：$versionName", color = Color(0xFF5A5858), fontSize = 14.sp)
-        }
         Button(
             onClick = { /*TODO*/ }, modifier = Modifier
                 .padding(top = 10.dp),

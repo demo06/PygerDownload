@@ -49,20 +49,24 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.weight(1f),
                             id = R.mipmap.zgw,
                             appName = "中钢网",
-                            versionName = "v6"
+                            versionName = "v6",
+                            position = 0
                         )
                         Row(modifier = Modifier.weight(1f)) {
                             AppInfoCard(
                                 modifier = Modifier.weight(1f),
-                                id = R.mipmap.zgw,
-                                appName = "中钢网",
-                                versionName = "v6"
+                                id = R.mipmap.qgb,
+                                appName = "抢钢宝" +
+                                        "",
+                                versionName = "v6",
+                                position = 1
                             )
                             AppInfoCard(
                                 modifier = Modifier.weight(1f),
-                                id = R.mipmap.zgw,
-                                appName = "中钢网",
-                                versionName = "v6"
+                                id = R.mipmap.wlb,
+                                appName = "物流宝",
+                                versionName = "v6",
+                                position = 2
                             )
                         }
                     }

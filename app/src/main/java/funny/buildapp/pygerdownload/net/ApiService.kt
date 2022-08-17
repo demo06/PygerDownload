@@ -2,8 +2,8 @@ package funny.buildapp.pygerdownload.net
 
 import funny.buildapp.clauncher.net.NetWork
 import funny.buildapp.pygerdownload.model.BaseBean
-import retrofit2.http.GET
-import retrofit2.http.Query
+import funny.buildapp.pygerdownload.model.GroupInfo
+import retrofit2.http.*
 
 /**
  * @author WenBin
@@ -13,13 +13,18 @@ import retrofit2.http.Query
  * @date 2022/6/16
  */
 interface ApiService {
-
-    @GET("api/AndroidApi/getAppData")
-    suspend fun getAppData(@Query("data_type") id: String): BaseBean
-
     companion object {
         fun instance(): ApiService {
             return NetWork.createService(ApiService::class.java)
         }
     }
+
+    @FormUrlEncoded
+    @POST("apiv2/appGroup/view")
+    suspend fun appGroup(
+        @Field("_api_key") appKey: String,
+        @Field("appGroupKey") appGroupKey: String,
+    ): BaseBean<GroupInfo>
+
+
 }

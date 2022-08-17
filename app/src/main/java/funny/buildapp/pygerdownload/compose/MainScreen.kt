@@ -2,6 +2,7 @@ package funny.buildapp.pygerdownload.compose
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import funny.buildapp.pygerdownload.model.AppInfo
 import funny.buildapp.pygerdownload.ui.theme.PGYER
 
 @Composable
@@ -39,7 +41,10 @@ fun AppInfoCard(
     id: Int,
     appName: String,
     versionName: String,
-    position: Int
+    buildCreated: String,
+    buildFileSize: Int,
+    position: Int,
+    onClick: () -> Unit
 ) {
     val pos by remember { mutableStateOf(position) }   //0-上  1-左 2-右
     val leftDp: Dp by derivedStateOf {
@@ -94,14 +99,17 @@ fun AppInfoCard(
             modifier = Modifier.padding(bottom = 10.dp)
         )
         Text("版本：$versionName", color = Color(0xFF5A5858), fontSize = 14.sp)
-        Text("安装包大小：$versionName", color = Color(0xFF5A5858), fontSize = 14.sp)
-        Text("更新时间：$versionName", color = Color(0xFF5A5858), fontSize = 14.sp)
+        Text("安装包大小：${buildFileSize / 1024 / 1024}M", color = Color(0xFF5A5858), fontSize = 14.sp)
+        Text("最后更新时间:", color = Color(0xFF5A5858), fontSize = 14.sp)
+        Text(buildCreated, color = Color(0xFFA1A0A0), fontSize = 14.sp)
         Button(
-            onClick = { /*TODO*/ }, modifier = Modifier
-                .padding(top = 10.dp),
+            onClick = { onClick() },
+            modifier = Modifier.padding(top = 10.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PGYER)
         ) {
-            Text("安装", modifier = Modifier.padding(start = 16.dp, end = 16.dp), fontSize = 16.sp)
+            Text(
+                "安装", modifier = Modifier.padding(start = 16.dp, end = 16.dp), fontSize = 16.sp
+            )
         }
 
     }

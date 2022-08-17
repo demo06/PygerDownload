@@ -5,22 +5,34 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.ViewModel
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.statusBarsHeight
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.SwipeRefreshIndicator
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import funny.buildapp.pygerdownload.compose.AppInfoCard
 import funny.buildapp.pygerdownload.compose.TitleBar
 import funny.buildapp.pygerdownload.ui.theme.PGYER
 import funny.buildapp.pygerdownload.ui.theme.PygerDownloadTheme
+import funny.buildapp.pygerdownload.viewmodel.MainViewModel
+import funny.buildapp.pygerdownload.viewmodel.ViewAction
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,6 +40,7 @@ class MainActivity : ComponentActivity() {
         // 1. 设置状态栏沉浸式
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
+            val viewModel = MainViewModel()
             // 加入ProvideWindowInsets
             ProvideWindowInsets {
                 // 2. 设置状态栏颜色
@@ -44,48 +57,73 @@ class MainActivity : ComponentActivity() {
                             .fillMaxWidth()
                     )
                     TitleBar(title = "蒲公英商店")
-                    Column(Modifier.fillMaxHeight()) {
-                        AppInfoCard(
-                            modifier = Modifier.weight(1f),
-                            id = R.mipmap.zgw,
-                            appName = "中钢网",
-                            versionName = "v6",
-                            position = 0
-                        )
-                        Row(modifier = Modifier.weight(1f)) {
-                            AppInfoCard(
-                                modifier = Modifier.weight(1f),
-                                id = R.mipmap.qgb,
-                                appName = "抢钢宝" +
-                                        "",
-                                versionName = "v6",
-                                position = 1
-                            )
-                            AppInfoCard(
-                                modifier = Modifier.weight(1f),
-                                id = R.mipmap.wlb,
-                                appName = "物流宝",
-                                versionName = "v6",
-                                position = 2
-                            )
-                        }
-                    }
-
+                    RefreshLayout(viewModel)
                 }
             }
         }
     }
 }
 
-@Composable
-fun Greeting(name: String) {
-    Text(text = "Hello $name!")
-}
 
-@Preview(showBackground = true)
 @Composable
-fun DefaultPreview() {
-    PygerDownloadTheme {
-        Greeting("Android")
+fun RefreshLayout(viewModel: MainViewModel) {
+    val viewState = viewModel.viewStates
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.dispatch(ViewAction.Refreshing)
+    }
+    SwipeRefresh(state = rememberSwipeRefreshState(isRefreshing = isRefreshing),
+        indicator = { state, refreshTrigger ->
+            SwipeRefreshIndicator(
+                // Pass the SwipeRefreshState + trigger through
+                state = state,
+                refreshTriggerDistance = refreshTrigger,
+                // Change the color and shape
+                contentColor = PGYER,
+            )
+        },
+        onRefresh = { viewModel.dispatch(ViewAction.Refreshing) }) {
+        Column(
+            Modifier
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState())
+        ) {
+            AppInfoCard(
+                modifier = Modifier.weight(1f),
+                id = R.mipmap.zgw,
+                appName = "中钢网",
+                versionName = viewState.zgwAppInfo?.buildVersion ?: "0",
+                buildFileSize = viewState.zgwAppInfo?.buildFileSize?.toInt() ?: 0,
+                buildCreated = viewState.zgwAppInfo?.buildCreated ?: "0",
+                position = 0
+            ) {
+                viewModel.dispatch(ViewAction.StopRefreshing)
+            }
+            Row(modifier = Modifier.weight(1f)) {
+                AppInfoCard(
+                    modifier = Modifier.weight(1f),
+                    id = R.mipmap.qgb,
+                    appName = "抢钢宝",
+                    versionName = viewState.qgbAppInfo?.buildVersion ?: "0",
+                    buildFileSize = viewState.qgbAppInfo?.buildFileSize?.toInt() ?: 0,
+                    buildCreated = viewState.qgbAppInfo?.buildCreated ?: "0",
+                    position = 1
+                ) {
+                    viewModel.dispatch(ViewAction.StopRefreshing)
+                }
+                AppInfoCard(
+                    modifier = Modifier.weight(1f),
+                    id = R.mipmap.wlb,
+                    appName = "物流宝",
+                    versionName = viewState.wlbAppInfo?.buildVersion ?: "0",
+                    buildFileSize = viewState.wlbAppInfo?.buildFileSize?.toInt() ?: 0,
+                    buildCreated = viewState.wlbAppInfo?.buildCreated ?: "0",
+                    position = 2
+                ) {
+                    viewModel.dispatch(ViewAction.StopRefreshing)
+                }
+            }
+        }
+
     }
 }

@@ -16,7 +16,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
  * @date 2022/6/16
  */
 object NetWork {
-    private const val BASE_URL = "https://admin.cofancy.cn/"
+    private const val BASE_URL = "https://www.pgyer.com/"
 
     private val loggingInterceptor = HttpLoggingInterceptor {
         it.log("Retrofit===>")

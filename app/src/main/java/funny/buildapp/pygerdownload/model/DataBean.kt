@@ -1,5 +1,14 @@
 package funny.buildapp.pygerdownload.model
 
+import android.os.Build
+import androidx.annotation.RequiresApi
+import funny.buildapp.clauncher.util.timeDiff
+import funny.buildapp.clauncher.util.toTimeStamp
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
+
 data class BaseBean<T>(
     val code: Int? = null, val data: T? = null, val message: String? = null
 )
@@ -28,7 +37,7 @@ data class AppInfo(
     val appId: String? = null,
     val appKey: String? = null,
     val buildBuildVersion: String? = null,
-    val buildCreated: String? = null,
+    var buildCreated: String? = null,
     val buildDescription: String? = null,
     val buildFileKey: String? = null,
     val buildFileName: String? = null,
@@ -44,4 +53,8 @@ data class AppInfo(
     val buildUpdateDescription: String? = null,
     val buildVersion: String? = null,
     val buildVersionNo: String? = null
-)
+) {
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getTime(): String = timeDiff(this.buildCreated ?: "")
+
+}

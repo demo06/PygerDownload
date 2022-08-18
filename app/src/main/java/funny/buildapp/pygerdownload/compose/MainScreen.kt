@@ -41,6 +41,7 @@ fun AppInfoCard(
     id: Int,
     appName: String,
     versionName: String,
+    versionCode: String,
     buildCreated: String,
     buildFileSize: Int,
     position: Int,
@@ -98,10 +99,35 @@ fun AppInfoCard(
             fontSize = 20.sp,
             modifier = Modifier.padding(bottom = 10.dp)
         )
-        Text("版本：$versionName", color = Color(0xFF5A5858), fontSize = 14.sp)
-        Text("安装包大小：${buildFileSize / 1024 / 1024}M", color = Color(0xFF5A5858), fontSize = 14.sp)
-        Text("最后更新时间:", color = Color(0xFF5A5858), fontSize = 14.sp)
-        Text(buildCreated, color = Color(0xFFA1A0A0), fontSize = 14.sp)
+        Text(
+            "版本信息:",
+            color = Color(0xFFA1A0A0),
+            fontSize = 14.sp,
+            modifier = Modifier.padding(top = 5.dp, bottom = 5.dp)
+        )
+        Row {
+            Text(versionName, color = Color(0xFF5A5858), fontSize = 14.sp)
+            Text(
+                " | ",
+                color = Color(0xFFA1A0A0),
+                fontSize = 14.sp,
+            )
+            Spacer(modifier = Modifier.background(Color(0xFFA1A0A0)))
+            Text(versionCode, color = Color(0xFF5A5858), fontSize = 14.sp)
+            Text(
+                " | ",
+                color = Color(0xFFA1A0A0),
+                fontSize = 14.sp,
+            )
+            Text("${buildFileSize / 1024 / 1024}M", color = Color(0xFF5A5858), fontSize = 14.sp)
+        }
+        Text(
+            "最后更新时间:",
+            color = Color(0xFFA1A0A0),
+            fontSize = 14.sp,
+            modifier = Modifier.padding(top = 5.dp, bottom = 5.dp)
+        )
+        Text(buildCreated, color = Color(0xFF5A5858), fontSize = 14.sp)
         Button(
             onClick = { onClick() },
             modifier = Modifier.padding(top = 10.dp),

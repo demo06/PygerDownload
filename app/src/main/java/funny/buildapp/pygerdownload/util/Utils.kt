@@ -31,7 +31,7 @@ val String.color
     get() = Color(android.graphics.Color.parseColor(this))
 
 fun String.toTimeStamp() =
-    SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(this).time
+    SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(this).time
 
 
 //endTime: Long = LocalDateTime.of(LocalDate.now(), LocalTime.MIN).atZone(ZoneId.systemDefault())

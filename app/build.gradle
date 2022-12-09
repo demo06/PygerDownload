@@ -7,12 +7,24 @@ android {
     namespace 'funny.buildapp.pygerdownload'
     compileSdk 32
 
+    signingConfigs {
+        release {
+            keyAlias 'key0'
+            keyPassword '123456'
+            storeFile file('../pgyerUpload.jks')
+            storePassword '123456'
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+    }
+
     defaultConfig {
         applicationId "funny.buildapp.pygerdownload"
         minSdk 24
         targetSdk 32
         versionCode 1
         versionName "1.0"
+        signingConfig signingConfigs.release
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -20,9 +32,11 @@ android {
         }
     }
 
+
     buildTypes {
         release {
             minifyEnabled false
+            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }

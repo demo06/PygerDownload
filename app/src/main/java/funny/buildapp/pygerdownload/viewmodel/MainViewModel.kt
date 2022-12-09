@@ -98,6 +98,12 @@ class MainViewModel : ViewModel() {
         }
     }
 
+    fun resetDownloadUrl() {
+        viewModelScope.launch {
+            _downloadUrl.value = ""
+        }
+    }
+
     private fun stopRefresh() {
         viewModelScope.launch {
             _isRefreshing.emit(false)

@@ -86,6 +86,7 @@ fun RefreshLayout(viewModel: MainViewModel) {
                 val intent = Intent(Intent.ACTION_VIEW)
                 intent.data = Uri.parse(it)
                 context.startActivity(intent)
+                viewModel.resetDownloadUrl()
             }
         }
     }

@@ -10,4 +10,5 @@ dependencies {
     implementation gradleApi()
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.7.20"
     implementation "com.android.tools.build:gradle-api:7.3.1"
+    implementation "com.squareup.okhttp3:okhttp:5.0.0-alpha.2"
 }

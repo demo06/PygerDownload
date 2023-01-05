@@ -1,6 +1,9 @@
 package funny.buildapp.pygerdownload
 
+import android.app.DownloadManager
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -33,10 +36,14 @@ import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.SwipeRefreshIndicator
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import funny.buildapp.pygerdownload.common.DownloadReceiver
 import funny.buildapp.pygerdownload.compose.AppInfoCard
+import funny.buildapp.pygerdownload.compose.AppScaffold
+import funny.buildapp.pygerdownload.compose.RefreshLayout
 import funny.buildapp.pygerdownload.compose.TitleBar
 import funny.buildapp.pygerdownload.ui.theme.PGYER
 import funny.buildapp.pygerdownload.ui.theme.PygerDownloadTheme
+import funny.buildapp.pygerdownload.util.PermissionUtils
 import funny.buildapp.pygerdownload.viewmodel.MainViewModel
 import funny.buildapp.pygerdownload.viewmodel.ViewAction
 import kotlinx.coroutines.flow.collect
@@ -45,122 +52,34 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        registerReceiver()
         // 1. 设置状态栏沉浸式
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             val viewModel = MainViewModel()
+            val context = LocalContext.current
             // 加入ProvideWindowInsets
             ProvideWindowInsets {
                 // 2. 设置状态栏颜色
                 rememberSystemUiController().setStatusBarColor(PGYER)
-                Column(
-                    Modifier
-                        .background(Color(0xFFF7F7F7))
-                        .fillMaxHeight()
+                AppScaffold(
+                    viewModel = viewModel,
+                    hasInstallPermission = PermissionUtils.haveInstallPermission(context = context)
                 ) {
-                    // 3. 获取状态栏高度并设置占位
-                    Spacer(
-                        modifier = Modifier
-                            .statusBarsHeight()
-                            .fillMaxWidth()
-                    )
-                    TitleBar(title = "蒲公英商店")
-                    RefreshLayout(viewModel)
+                    PermissionUtils.goSettings(context)
                 }
             }
         }
     }
+
+    private fun registerReceiver() {
+        val receiver = DownloadReceiver()
+        registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+    }
+
+
 }
 
 
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun RefreshLayout(viewModel: MainViewModel) {
-    val context = LocalContext.current
-    val viewState = viewModel.viewStates
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
-    LaunchedEffect(Unit) {
-        viewModel.dispatch(ViewAction.Refreshing)
-        viewModel.downloadUrl.collect {
-            if (it.isNotEmpty()) {
-                val intent = Intent(Intent.ACTION_VIEW)
-                intent.data = Uri.parse(it)
-                context.startActivity(intent)
-                viewModel.resetDownloadUrl()
-            }
-        }
-    }
-    SwipeRefresh(state = rememberSwipeRefreshState(isRefreshing = isRefreshing),
-        indicator = { state, refreshTrigger ->
-            SwipeRefreshIndicator(
-                // Pass the SwipeRefreshState + trigger through
-                state = state,
-                refreshTriggerDistance = refreshTrigger,
-                // Change the color and shape
-                contentColor = PGYER,
-            )
-        },
-        onRefresh = { viewModel.dispatch(ViewAction.Refreshing) }) {
-        Column(
-            Modifier
-                .fillMaxHeight()
-                .verticalScroll(rememberScrollState())
-        ) {
-            AppInfoCard(
-                modifier = Modifier.weight(1f),
-                id = R.mipmap.zgw,
-                appName = "中钢网",
-                versionName = viewState.zgwAppInfo?.buildVersion ?: "0",
-                versionCode = viewState.zgwAppInfo?.buildVersionNo ?: "0",
-                buildFileSize = viewState.zgwAppInfo?.buildFileSize?.toInt() ?: 0,
-                buildCreated = viewState.zgwAppInfo?.getTime() ?: "0",
-                position = 0
-            ) {
-                viewModel.dispatch(
-                    ViewAction.Download(
-                        viewState.zgwAppInfo?.appKey ?: "",
-                        viewState.zgwAppInfo?.buildPassword ?: ""
-                    )
-                )
-            }
-            Row(modifier = Modifier.weight(1f)) {
-                AppInfoCard(
-                    modifier = Modifier.weight(1f),
-                    id = R.mipmap.qgb,
-                    appName = "抢钢宝",
-                    versionName = viewState.qgbAppInfo?.buildVersion ?: "0",
-                    versionCode = viewState.qgbAppInfo?.buildVersionNo ?: "0",
-                    buildFileSize = viewState.qgbAppInfo?.buildFileSize?.toInt() ?: 0,
-                    buildCreated = viewState.qgbAppInfo?.getTime() ?: "0",
-                    position = 1
-                ) {
-                    viewModel.dispatch(
-                        ViewAction.Download(
-                            viewState.qgbAppInfo?.appKey ?: "",
-                            viewState.qgbAppInfo?.buildPassword ?: ""
-                        )
-                    )
 
-                }
-                AppInfoCard(
-                    modifier = Modifier.weight(1f),
-                    id = R.mipmap.wlb,
-                    appName = "物流宝",
-                    versionName = viewState.wlbAppInfo?.buildVersion ?: "0",
-                    versionCode = viewState.wlbAppInfo?.buildVersionNo ?: "0",
-                    buildFileSize = viewState.wlbAppInfo?.buildFileSize?.toInt() ?: 0,
-                    buildCreated = viewState.wlbAppInfo?.getTime() ?: "0",
-                    position = 2
-                ) {
-                    viewModel.dispatch(
-                        ViewAction.Download(
-                            viewState.wlbAppInfo?.appKey ?: "",
-                            viewState.wlbAppInfo?.buildPassword ?: ""
-                        )
-                    )
-                }
-            }
-        }
 
-    }
-}

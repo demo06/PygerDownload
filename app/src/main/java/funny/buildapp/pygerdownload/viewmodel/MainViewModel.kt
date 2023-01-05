@@ -1,15 +1,20 @@
 package funny.buildapp.pygerdownload.viewmodel
 
+import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Network
 import android.net.Uri
+import android.os.Environment
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import funny.buildapp.clauncher.util.log
+import funny.buildapp.clauncher.util.toast
 import funny.buildapp.pygerdownload.model.AppInfo
 import funny.buildapp.pygerdownload.net.ApiService
 import funny.buildapp.pygerdownload.net.NetWork
@@ -102,6 +107,22 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             _downloadUrl.value = ""
         }
+    }
+
+    fun gotoBrowserDownload(context: Context, url: String) {
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.data = Uri.parse(url)
+        context.startActivity(intent)
+    }
+
+    fun gotoDownloadManager(context: Context, url: String) {
+        "开始下载".toast(context)
+        url.log()
+        val downloadManager =
+            context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val request = DownloadManager.Request(Uri.parse(url))
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+        downloadManager.enqueue(request)
     }
 
     private fun stopRefresh() {

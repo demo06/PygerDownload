@@ -1,7 +1,10 @@
 package funny.buildapp.clauncher.util
 
+import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Build
 import android.util.Log
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.Color
 import java.text.ParsePosition
@@ -25,6 +28,10 @@ private const val TAG = "PgyerDownload===>"
 
 fun Any.log(tag: String = TAG) {
     Log.i(tag, this.toString())
+}
+
+fun Any.toast(context: Context) {
+    Toast.makeText(context, this.toString(), Toast.LENGTH_SHORT).show()
 }
 
 val String.color

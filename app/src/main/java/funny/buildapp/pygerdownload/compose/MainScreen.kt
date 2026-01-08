@@ -1,63 +1,87 @@
 package funny.buildapp.pygerdownload.compose
 
 import android.annotation.SuppressLint
-import android.os.Build
-import androidx.annotation.RequiresApi
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.accompanist.insets.statusBarsHeight
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.SwipeRefreshIndicator
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import androidx.lifecycle.viewmodel.compose.viewModel
 import funny.buildapp.pygerdownload.R
-import funny.buildapp.pygerdownload.model.AppInfo
+import funny.buildapp.pygerdownload.ui.theme.GARY
 import funny.buildapp.pygerdownload.ui.theme.PGYER
+import funny.buildapp.pygerdownload.util.PermissionUtils
 import funny.buildapp.pygerdownload.viewmodel.MainViewModel
 import funny.buildapp.pygerdownload.viewmodel.ViewAction
 
-
-@RequiresApi(Build.VERSION_CODES.O)
+@Preview
 @Composable
-fun AppScaffold(viewModel: MainViewModel, hasInstallPermission: Boolean, goSetting: () -> Unit) {
+fun AppScaffold(viewModel: MainViewModel = viewModel()) {
+    val context = LocalContext.current
     Column(
         Modifier
             .background(Color(0xFFF7F7F7))
             .fillMaxHeight()
     ) {
-        // 3. 获取状态栏高度并设置占位
-        Spacer(
-            modifier = Modifier
-                .statusBarsHeight()
-                .fillMaxWidth()
-        )
         TitleBar(title = "蒲公英商店")
-        RefreshLayout(viewModel, hasInstallPermission, goSetting)
+        RefreshLayout(viewModel) {
+            PermissionUtils.goSettings(context)
+        }
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun RefreshLayout(viewModel: MainViewModel, hasInstallPermission: Boolean, goSetting: () -> Unit) {
+fun RefreshLayout(viewModel: MainViewModel, goSetting: () -> Unit) {
     val context = LocalContext.current
     val viewState = viewModel.viewStates
     val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val state =rememberPullToRefreshState()
+    val hasPermission = remember { PermissionUtils.haveInstallPermission(context = context) }
+    var showTipState by remember { mutableStateOf(hasPermission) }
+
     LaunchedEffect(Unit) {
         viewModel.dispatch(ViewAction.Refreshing)
         viewModel.downloadUrl.collect {
             if (it.isNotEmpty()) {
-                if (hasInstallPermission) {
+                if (hasPermission) {
                     viewModel.gotoDownloadManager(context, it)
                 } else {
                     viewModel.gotoBrowserDownload(context, it)
@@ -66,19 +90,23 @@ fun RefreshLayout(viewModel: MainViewModel, hasInstallPermission: Boolean, goSet
             }
         }
     }
-    SwipeRefresh(state = rememberSwipeRefreshState(isRefreshing = isRefreshing),
-        indicator = { state, refreshTrigger ->
-            SwipeRefreshIndicator(
-                // Pass the SwipeRefreshState + trigger through
-                state = state,
-                refreshTriggerDistance = refreshTrigger,
-                // Change the color and shape
-                contentColor = PGYER,
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        state=state,
+        onRefresh = {
+            viewModel.dispatch(ViewAction.Refreshing)
+        },
+        indicator = {
+            Indicator(
+                modifier = Modifier.align(Alignment.TopCenter),
+                isRefreshing = isRefreshing,
+                containerColor = GARY,
+                color =PGYER ,
+                state = state
             )
         },
-        onRefresh = { viewModel.dispatch(ViewAction.Refreshing) }) {
+    ) {
         Box {
-            var showTipState by remember { mutableStateOf(hasInstallPermission) }
             if (!showTipState) {
                 CommonDialog(onDismiss = { showTipState = true }) {
                     showTipState = true
@@ -147,8 +175,8 @@ fun RefreshLayout(viewModel: MainViewModel, hasInstallPermission: Boolean, goSet
             }
 
         }
-
     }
+
 }
 
 
@@ -156,9 +184,12 @@ fun RefreshLayout(viewModel: MainViewModel, hasInstallPermission: Boolean, goSet
 fun TitleBar(title: String) {
     Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(59.dp)
             .background(PGYER)
+            .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
+            .fillMaxWidth()
+            .height(49.dp)
+            .background(PGYER)
+
     ) {
         Text(
             text = title, fontSize = 18.sp, color = Color.White, modifier = Modifier.align(

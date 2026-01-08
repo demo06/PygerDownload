@@ -9,9 +9,10 @@ import java.io.File
 import java.io.IOException
 
 
-class UploadPlugin : Plugin<Project> {
+class PgyerUpload : Plugin<Project> {
     private val okHttpClient = OkHttpClient()
     val uploadUrl = "https://www.pgyer.com/apiv2/app/upload"
+
     override fun apply(project: Project) {
         project.task("upload") { task ->
             task.doLast {
@@ -25,16 +26,15 @@ class UploadPlugin : Plugin<Project> {
                     if (files != null) {
                         if (files.isNotEmpty()) {
                             val file = files[0]
-//                            println(file.name)
                             uploadApk(file, file.name)
                         }
                     }
-//                    println("apkFiles =====> done!${files[0].absolutePath}")
                 }
-            }
-//        }.dependsOn("assembleRelease")
+            }.dependsOn("assembleRelease")
+
         }
     }
+
 
     private fun uploadApk(file: File, fileName: String) {
         val body = file.asRequestBody("multipart/form-data".toMediaType())

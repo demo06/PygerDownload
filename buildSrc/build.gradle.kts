@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "2.0.21"
+    kotlin("jvm") version "2.2.21"
 }
 val kotlinVersion = "2.0.21"
 val agpVersion = "8.6.1"

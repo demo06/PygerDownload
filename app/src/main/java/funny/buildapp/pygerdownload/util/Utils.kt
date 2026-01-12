@@ -6,6 +6,12 @@ import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import java.text.ParsePosition
 import java.text.SimpleDateFormat
@@ -34,16 +40,12 @@ fun Any.toast(context: Context) {
     Toast.makeText(context, this.toString(), Toast.LENGTH_SHORT).show()
 }
 
-val String.color
-    get() = Color(android.graphics.Color.parseColor(this))
-
 fun String.toTimeStamp() =
     SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(this).time
 
 
 //endTime: Long = LocalDateTime.of(LocalDate.now(), LocalTime.MIN).atZone(ZoneId.systemDefault())
 //.toEpochSecond() * 1000
-@RequiresApi(Build.VERSION_CODES.O)
 fun timeDiff(
     startTime: String,
     endTime: Long = System.currentTimeMillis()
@@ -78,4 +80,25 @@ fun timeDiff(
     }
 }
 
+
+
+fun Modifier.click(onClick: () -> Unit): Modifier {
+    return this.composed {
+        val lastClickTime = remember { mutableLongStateOf(0L) }
+        this.clickable(
+            enabled = true,
+            onClickLabel = null,
+            role = null,
+            indication = null,
+            interactionSource = remember { MutableInteractionSource() },
+            onClick = {
+                val now = System.currentTimeMillis()
+                if (now - lastClickTime.value > 500) {
+                    lastClickTime.value = now
+                    onClick()
+                }
+            }
+        )
+    }
+}
 

@@ -6,11 +6,15 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.Network
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
+import android.content.pm.PackageManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat.startActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import funny.buildapp.clauncher.util.log
@@ -21,6 +25,7 @@ import funny.buildapp.pygerdownload.net.NetWork
 import funny.buildapp.pygerdownload.net.NetWork.BASE_URL
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import okhttp3.internal.notify
 
 
 /**
@@ -116,12 +121,36 @@ class MainViewModel : ViewModel() {
     }
 
     fun gotoDownloadManager(context: Context, url: String) {
+        // Android 13+ requires POST_NOTIFICATIONS permission for showing download notifications
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                "未授予通知权限，下载将无通知显示".toast(context)
+            }
+        }
+
         "开始下载".toast(context)
         url.log()
+
         val downloadManager =
             context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val request = DownloadManager.Request(Uri.parse(url))
-        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
+
+        val request = DownloadManager.Request(Uri.parse(url)).apply {
+            setNotificationVisibility(
+                DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+            )
+            setTitle("应用下载中")
+            setDescription("正在下载更新包")
+            setAllowedOverMetered(true)
+            setAllowedOverRoaming(true)
+            setDestinationInExternalPublicDir(
+                Environment.DIRECTORY_DOWNLOADS,
+                Uri.parse(url).lastPathSegment
+            )
+        }
         downloadManager.enqueue(request)
     }
 
@@ -147,5 +176,3 @@ sealed class ViewAction {
     object FetchData : ViewAction()
     data class Download(val appKey: String, val password: String) : ViewAction()
 }
-
-

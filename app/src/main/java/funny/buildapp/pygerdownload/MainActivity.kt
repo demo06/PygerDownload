@@ -1,7 +1,7 @@
 package funny.buildapp.pygerdownload
 
+import android.Manifest
 import android.app.DownloadManager
-import android.content.Context
 import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
@@ -9,12 +9,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.core.app.ActivityCompat
 import funny.buildapp.pygerdownload.common.DownloadReceiver
-import funny.buildapp.pygerdownload.compose.AppScaffold
-import funny.buildapp.pygerdownload.util.PermissionUtils
-import funny.buildapp.pygerdownload.viewmodel.MainViewModel
+import funny.buildapp.pygerdownload.ui.screen.AppHome
 
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
@@ -22,8 +19,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         registerReceiver()
         enableEdgeToEdge()
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+            1001
+        )
         setContent {
-            AppScaffold()
+            AppHome()
         }
     }
 
@@ -36,7 +38,6 @@ class MainActivity : ComponentActivity() {
                 RECEIVER_NOT_EXPORTED
             )
         } else {
-            @Suppress("DEPRECATION")
             registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
         }
 

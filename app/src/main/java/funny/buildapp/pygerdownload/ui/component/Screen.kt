@@ -1,15 +1,12 @@
-package funny.buildapp.pygerdownload.ui.screen
+package funny.buildapp.pygerdownload.ui.component
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.SheetState
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import funny.buildapp.pygerdownload.ui.component.LoadingDialog
 
 /**
  * 通用页面结构组件，支持：

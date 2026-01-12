@@ -81,7 +81,6 @@ fun timeDiff(
 }
 
 
-
 fun Modifier.click(onClick: () -> Unit): Modifier {
     return this.composed {
         val lastClickTime = remember { mutableLongStateOf(0L) }
@@ -100,5 +99,10 @@ fun Modifier.click(onClick: () -> Unit): Modifier {
             }
         )
     }
+}
+
+
+fun Any?.loge() {
+    Log.e("wenbin========>", this.toString())
 }
 

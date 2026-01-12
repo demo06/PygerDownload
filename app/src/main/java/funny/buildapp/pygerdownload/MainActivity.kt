@@ -1,6 +1,7 @@
 package funny.buildapp.pygerdownload
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.IntentFilter
 import android.os.Build
@@ -11,7 +12,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import funny.buildapp.pygerdownload.common.DownloadReceiver
-import funny.buildapp.pygerdownload.ui.screen.AppHome
+import funny.buildapp.pygerdownload.route.AppNavHost
 
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
@@ -25,10 +26,11 @@ class MainActivity : ComponentActivity() {
             1001
         )
         setContent {
-            AppHome()
+            AppNavHost()
         }
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     private fun registerReceiver() {
         val receiver = DownloadReceiver()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

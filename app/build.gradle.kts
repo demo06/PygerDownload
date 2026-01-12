@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.jetbrains.kotlin.serialization)
     id("pgyer-upload")
 }
 
@@ -70,7 +71,8 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.material.icons.extended)
     implementation(libs.compose.lifecycle.viewmodel)
-
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     // Networking
     implementation(libs.moshi.kotlin)
     implementation(libs.retrofit)

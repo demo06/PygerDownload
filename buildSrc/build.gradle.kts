@@ -2,7 +2,7 @@ plugins {
     kotlin("jvm") version "2.2.21"
 }
 val kotlinVersion = "2.0.21"
-val agpVersion = "8.6.1"
+val agpVersion = "8.9.1"
 repositories {
     maven("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/")
     google()

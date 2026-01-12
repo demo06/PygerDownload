@@ -1,5 +1,7 @@
 package funny.buildapp.pygerdownload.viewmodel
 
+import android.Manifest
+import android.R.attr.apiKey
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
@@ -23,6 +25,10 @@ import funny.buildapp.pygerdownload.model.AppInfo
 import funny.buildapp.pygerdownload.net.ApiService
 import funny.buildapp.pygerdownload.net.NetWork
 import funny.buildapp.pygerdownload.net.NetWork.BASE_URL
+import funny.buildapp.pygerdownload.ui.screen.home.HomeUiAction
+import funny.buildapp.pygerdownload.ui.screen.home.HomeUiEffect
+import funny.buildapp.pygerdownload.ui.screen.home.HomeUiState
+import funny.buildapp.pygerdownload.util.BaseMviViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import okhttp3.internal.notify
@@ -35,83 +41,43 @@ import okhttp3.internal.notify
  * @email wenbin@buildapp.fun
  * @date 2022/6/16
  */
-class MainViewModel : ViewModel() {
+class MainViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(HomeUiState()) {
 
 
-    private val api = ApiService.instance()
-    private val _isRefreshing = MutableStateFlow(false)
-    val isRefreshing: StateFlow<Boolean>
-        get() = _isRefreshing.asStateFlow()
-    private val _downloadUrl = MutableStateFlow("")
-    val downloadUrl: StateFlow<String>
-        get() = _downloadUrl.asStateFlow()
-    var viewStates by mutableStateOf(MainViewState())
-        private set
-
-
-    companion object {
-        const val apiKey = "955873f76198c4d20e6478e2a9103fc8"
-        const val groupKey = "b86cbab03a5c5b24022dfdfc744cfef6"
+    override fun handleAction(action: HomeUiAction) {
+        when (action) {
+            is HomeUiAction.GoDetail -> sendEffect { HomeUiEffect.GoDetail }
+            is HomeUiAction.ShowUpdate -> changeDownLoadDialogState()
+            is HomeUiAction.Update -> {}
+            is HomeUiAction.FetchData -> fetchData()
+            is HomeUiAction.Download -> downloadApp(action.appKey, action.password)
+        }
     }
 
-    fun dispatch(action: ViewAction) {
-        when (action) {
-            is ViewAction.Refreshing -> fetchData()
-            is ViewAction.StopRefreshing -> stopRefresh()
-            is ViewAction.FetchData -> fetchData()
-            is ViewAction.Download -> downloadApp(action.appKey, action.password)
-        }
+    override fun updateLoading() {
     }
 
 
     private fun fetchData() {
-        viewModelScope.launch {
-            _isRefreshing.emit(true)
-            flow {
-                emit(api.appGroup(apiKey, groupKey))
-            }.map { it ->
-                if (it.code == 0) {
-                    if (it.data != null) {
-//                        HttpResult.Success(it.data)
-                        val groupInfo = it.data
-                        val zgw = groupInfo.apps?.first { info ->
-                            info?.buildName == "中钢网"
-                        }
-                        val wlb = groupInfo.apps?.first { info ->
-                            info?.buildName == "物流宝"
-                        }
-                        val qgb = groupInfo.apps?.first { info ->
-                            info?.buildName == "抢钢宝"
-                        }
-                        viewStates = viewStates.copy(
-                            zgwAppInfo = zgw, wlbAppInfo = wlb, qgbAppInfo = qgb
-                        )
-                    } else {
-                        throw Exception("the result of remote's request is null")
-                    }
-                } else {
-                    throw Exception(it.message)
-                }
-                stopRefresh()
-            }.catch {
-                stopRefresh()
-            }.collect()
-        }
+        setState { copy(isRefreshing = true) }
+        request(
+            api = { ApiService.instance().appGroup(_uiState.value.apiKey, _uiState.value.groupKey) },
+            onFailed = { setState { copy(isRefreshing = false) } },
+            onSuccess = {
+                setState { copy(items = it.apps ?: emptyList(), isRefreshing = false) }
+            }
+        )
     }
 
 
-    private fun downloadApp(appkey: String, password: String) {
+    private fun downloadApp(appKey: String, password: String) {
         val url =
-            "${BASE_URL}apiv2/app/install?_api_key=${apiKey}&appKey=${appkey}&buildPassword=${password}"
-        viewModelScope.launch {
-            _downloadUrl.emit(url)
-        }
+            "${BASE_URL}apiv2/app/install?_api_key=${apiKey}&appKey=${appKey}&buildPassword=${password}"
     }
 
-    fun resetDownloadUrl() {
-        viewModelScope.launch {
-            _downloadUrl.value = ""
-        }
+
+    private fun changeDownLoadDialogState() {
+        setState { copy(hasUpdate = !hasUpdate) }
     }
 
     fun gotoBrowserDownload(context: Context, url: String) {
@@ -121,11 +87,10 @@ class MainViewModel : ViewModel() {
     }
 
     fun gotoDownloadManager(context: Context, url: String) {
-        // Android 13+ requires POST_NOTIFICATIONS permission for showing download notifications
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val granted = ContextCompat.checkSelfPermission(
                 context,
-                android.Manifest.permission.POST_NOTIFICATIONS
+                Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
             if (!granted) {
                 "未授予通知权限，下载将无通知显示".toast(context)
@@ -154,25 +119,6 @@ class MainViewModel : ViewModel() {
         downloadManager.enqueue(request)
     }
 
-    private fun stopRefresh() {
-        viewModelScope.launch {
-            _isRefreshing.emit(false)
-        }
-    }
 
 }
 
-
-data class MainViewState(
-    val zgwAppInfo: AppInfo? = null,
-    val wlbAppInfo: AppInfo? = null,
-    val qgbAppInfo: AppInfo? = null,
-)
-
-
-sealed class ViewAction {
-    object Refreshing : ViewAction()
-    object StopRefreshing : ViewAction()
-    object FetchData : ViewAction()
-    data class Download(val appKey: String, val password: String) : ViewAction()
-}

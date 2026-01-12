@@ -2,11 +2,6 @@ package funny.buildapp.pygerdownload.model
 
 import funny.buildapp.clauncher.util.timeDiff
 
-data class BaseBean<T>(
-    val code: Int? = null, val data: T? = null, val message: String? = null
-)
-
-
 /**
  * 组信息
  * @property appCreated
@@ -23,7 +18,7 @@ data class GroupInfo(
     val appGroupKey: String? = null,
     val appGroupName: String? = null,
     val appGroupShortcutURL: String? = null,
-    val apps: List<AppInfo?>? = null
+    val apps: List<AppInfo>? = emptyList()
 )
 
 data class AppInfo(

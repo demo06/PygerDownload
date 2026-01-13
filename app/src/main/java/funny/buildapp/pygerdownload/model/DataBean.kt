@@ -45,3 +45,24 @@ data class AppInfo(
     fun getTime(): String = timeDiff(this.buildCreated ?: "")
 
 }
+
+
+data class AppUpdate(
+    val appKey: String? = "",
+    val appURl: String? = "",
+    val buildBuildVersion: String? = "",
+    val buildDescription: String? = "",
+    val buildFileKey: String? = "",
+    val buildFileSize: String? = "",
+    val buildHaveNewVersion: Boolean? = false,
+    val buildIcon: String? = "",
+    val buildKey: String? = "",
+    val buildName: String? = "",
+    val buildUpdateDescription: String? = "",
+    val buildVersion: String? = "",
+    val buildVersionNo: String? = "",
+    val downloadURL: String? = "",
+    val forceUpdateVersion: String? = "",
+    val forceUpdateVersionNo: String? = "",
+    val needForceUpdate: Boolean? = false
+)

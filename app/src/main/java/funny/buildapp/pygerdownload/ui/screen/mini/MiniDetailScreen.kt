@@ -76,8 +76,6 @@ private fun UIEffect(viewModel: MiniDetailViewModel, dispatch: (MiniDetailUiActi
     val navigator = LocalNavigator.current
     val effect by viewModel.effect.collectAsState(initial = null)
     val context = LocalContext.current
-
-
     LaunchedEffect(Unit) {
         dispatch(MiniDetailUiAction.FetchData)
     }

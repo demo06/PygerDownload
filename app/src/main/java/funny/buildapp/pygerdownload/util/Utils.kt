@@ -1,7 +1,11 @@
 package funny.buildapp.clauncher.util
 
+import android.R
+import android.R.attr.password
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
@@ -21,6 +25,9 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
+import androidx.core.net.toUri
+import funny.buildapp.pygerdownload.util.Constants
+import funny.buildapp.pygerdownload.util.Constants.BASE_URL
 
 /**
  * @author WenBin
@@ -105,4 +112,15 @@ fun Modifier.click(onClick: () -> Unit): Modifier {
 fun Any?.loge() {
     Log.e("wenbin========>", this.toString())
 }
+
+
+fun String.gotoBrowserDownload(context: Context) {
+    val intent = Intent(Intent.ACTION_VIEW)
+    intent.data = this.toUri()
+    context.startActivity(intent)
+}
+
+
+fun downloadUrl(appkey: String, passwrod: String): String =
+    "${BASE_URL}apiv2/app/install?_api_key=${Constants.API_KEY}&appKey=${appkey}&buildPassword=${passwrod}"
 

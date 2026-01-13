@@ -1,4 +1,6 @@
 [versions]
+versionName = "v1.0.0"
+versionCode = "1"
 agp = "8.9.1"
 kotlin = "2.0.21"
 coreKtx = "1.13.1"
@@ -14,7 +16,6 @@ coroutines = "1.8.1"
 coil = "3.0.4"
 kotlinSerialization = "2.2.21"
 nav3Core = "1.0.0"
-lifecycleViewmodelNav3 = "2.10.0"
 
 
 [libraries]
@@ -51,4 +52,4 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerialization"}
+jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerialization" }

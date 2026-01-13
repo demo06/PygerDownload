@@ -1,20 +1,10 @@
 package funny.buildapp.pygerdownload.ui.screen.home
 
-import android.Manifest
-import android.R
-import android.app.DownloadManager
-import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import androidx.core.content.ContextCompat
-import funny.buildapp.clauncher.util.log
-import funny.buildapp.clauncher.util.toast
+import funny.buildapp.clauncher.util.downloadUrl
+import funny.buildapp.pygerdownload.BuildConfig
 import funny.buildapp.pygerdownload.net.ApiService
-import funny.buildapp.pygerdownload.net.NetWork
 import funny.buildapp.pygerdownload.util.BaseMviViewModel
+import funny.buildapp.pygerdownload.util.Constants
 
 /**
  * @author WenBin
@@ -25,13 +15,24 @@ import funny.buildapp.pygerdownload.util.BaseMviViewModel
  */
 class HomeViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(HomeUiState()) {
 
+    init {
+        checkUpdate()
+    }
 
     override fun handleAction(action: HomeUiAction) {
         when (action) {
             is HomeUiAction.GoDetail -> sendEffect { HomeUiEffect.GoDetail }
             is HomeUiAction.GoMINIDetail -> sendEffect { HomeUiEffect.GoMINIDetail }
             is HomeUiAction.ShowUpdate -> changeDownLoadDialogState()
-            is HomeUiAction.Update -> {}
+            is HomeUiAction.Update -> {
+                setState { copy(isDownloading = true) }
+                downloadApp(Constants.PGYER_KEY, "")
+            }
+
+            is HomeUiAction.UpdateDownloadProgress -> {
+                setState { copy(updateProcess = action.progress) }
+            }
+
             is HomeUiAction.FetchData -> fetchData()
             is HomeUiAction.Download -> downloadApp(action.appKey, action.password)
         }
@@ -40,11 +41,17 @@ class HomeViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(
     override fun updateLoading() {
     }
 
-
+    /**
+     * 获取最新数据
+     */
     private fun fetchData() {
+        getAppGroup()
+    }
+
+    private fun getAppGroup() {
         setState { copy(isRefreshing = true) }
         request(
-            api = { ApiService.Companion.instance().appGroup(_uiState.value.apiKey, _uiState.value.groupKey) },
+            api = { ApiService.instance().appGroup(Constants.API_KEY, Constants.GROUP_KEY) },
             onFailed = { setState { copy(isRefreshing = false) } },
             onSuccess = {
                 setState { copy(items = it.apps ?: emptyList(), isRefreshing = false) }
@@ -53,53 +60,34 @@ class HomeViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(
     }
 
 
+    /**
+     * 检查更新
+     */
+    private fun checkUpdate() {
+        request(
+            api = { ApiService.instance().check(Constants.API_KEY, Constants.PGYER_KEY) },
+            onSuccess = {
+                setState {
+                    copy(
+                        hasUpdate = (it.buildVersionNo?.toInt() ?: 0) > BuildConfig.VERSION_CODE,
+                        isForceUpdate = it.buildUpdateDescription?.split("===")[1]?.contains("isForceUpdate=true")
+                            ?: false,
+                        updateContent = it.buildUpdateDescription?.split("===")[0] ?: ""
+                    )
+                }
+            }
+        )
+    }
+
+
     private fun downloadApp(appKey: String, password: String) {
-        val url =
-            "${NetWork.BASE_URL}apiv2/app/install?_api_key=${R.attr.apiKey}&appKey=${appKey}&buildPassword=${password}"
+        val url = downloadUrl(appKey, password)
+        sendEffect { HomeUiEffect.DownLoadApp(url) }
     }
 
 
     private fun changeDownLoadDialogState() {
         setState { copy(hasUpdate = !hasUpdate) }
-    }
-
-    fun gotoBrowserDownload(context: Context, url: String) {
-        val intent = Intent(Intent.ACTION_VIEW)
-        intent.data = Uri.parse(url)
-        context.startActivity(intent)
-    }
-
-    fun gotoDownloadManager(context: Context, url: String) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val granted = ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-            if (!granted) {
-                "未授予通知权限，下载将无通知显示".toast(context)
-            }
-        }
-
-        "开始下载".toast(context)
-        url.log()
-
-        val downloadManager =
-            context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-
-        val request = DownloadManager.Request(Uri.parse(url)).apply {
-            setNotificationVisibility(
-                DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
-            )
-            setTitle("应用下载中")
-            setDescription("正在下载更新包")
-            setAllowedOverMetered(true)
-            setAllowedOverRoaming(true)
-            setDestinationInExternalPublicDir(
-                Environment.DIRECTORY_DOWNLOADS,
-                Uri.parse(url).lastPathSegment
-            )
-        }
-        downloadManager.enqueue(request)
     }
 
 

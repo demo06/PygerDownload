@@ -1,6 +1,5 @@
 package funny.buildapp.pygerdownload.ui.component
 
-import android.opengl.Visibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,16 +20,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Backup
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,8 +42,6 @@ import funny.buildapp.pygerdownload.ui.theme.orangeFF7300
 import funny.buildapp.pygerdownload.ui.theme.theme
 import funny.buildapp.pygerdownload.ui.theme.white
 import funny.buildapp.pygerdownload.ui.theme.whiteF4F5FA
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun CommonDialog(onDismiss: () -> Unit, confirm: () -> Unit) {
@@ -194,19 +185,11 @@ fun UpgradeDialog(
     visible: Boolean = false,
     isForceUpdate: Boolean = false,
     isDownloading: Boolean = false,
-    updateContent: String = "这是一次跨版本更新",
+    progress: Int = 0,
+    updateContent: String = "",
     onDismiss: () -> Unit = {},
     onConfirm: () -> Unit = {}
 ) {
-    var currentProgress by remember { mutableFloatStateOf(0f) }
-    val scope = rememberCoroutineScope()
-
-    suspend fun loadProgress(updateProgress: (Float) -> Unit) {
-        for (i in 1..100) {
-            updateProgress(i.toFloat() / 100)
-            delay(100)
-        }
-    }
     if (visible) {
         Box(
             Modifier
@@ -237,12 +220,11 @@ fun UpgradeDialog(
 
                 Text(
                     text = buildString {
-                        append("更新内容:\n")
                         append(updateContent)
-
                     },
                     color = gray999,
                     fontSize = 14.sp,
+                    lineHeight = 24.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 16.dp)
                 )
@@ -255,7 +237,7 @@ fun UpgradeDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         LinearProgressIndicator(
-                            progress = { currentProgress },
+                            progress = { progress / 100f },
                             modifier = Modifier
                                 .height(12.dp)
                                 .weight(1f),
@@ -263,23 +245,13 @@ fun UpgradeDialog(
                             trackColor = theme.copy(0.2f),
                         )
                         Text(
-                            "${(currentProgress * 100).toInt()}%",
+                            "${progress}%",
                             textAlign = TextAlign.Center,
                             modifier = Modifier
                                 .padding(start = 8.dp)
                                 .width(35.dp)
                         )
                     }
-//                Button({
-//                    scope.launch {
-//                        loadProgress { progress ->
-//                            currentProgress = progress
-//                        }
-//                    }
-//                }) {
-//                    Text("更新")
-//                }
-
                 } else {
                     Row(
                         Modifier
@@ -311,7 +283,7 @@ fun UpgradeDialog(
                                 .weight(1f)
                                 .background(theme, RoundedCornerShape(4.dp))
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .click{
+                                .click {
                                     onDismiss()
                                     onConfirm()
                                 }

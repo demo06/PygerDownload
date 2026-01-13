@@ -1,21 +1,18 @@
 package funny.buildapp.pygerdownload.ui.screen.home
 
+import android.app.DownloadManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +24,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import funny.buildapp.clauncher.util.click
+import funny.buildapp.clauncher.util.loge
 import funny.buildapp.clauncher.util.toast
 import funny.buildapp.pygerdownload.R
 import funny.buildapp.pygerdownload.route.AppRoute
@@ -47,13 +47,15 @@ import funny.buildapp.pygerdownload.route.LocalNavigator
 import funny.buildapp.pygerdownload.ui.component.Screen
 import funny.buildapp.pygerdownload.ui.component.TitleBar
 import funny.buildapp.pygerdownload.ui.component.UpgradeDialog
-import funny.buildapp.pygerdownload.ui.screen.detail.DetailUiEffect
 import funny.buildapp.pygerdownload.ui.theme.black333
 import funny.buildapp.pygerdownload.ui.theme.gray999
 import funny.buildapp.pygerdownload.ui.theme.green07C160
 import funny.buildapp.pygerdownload.ui.theme.theme
 import funny.buildapp.pygerdownload.ui.theme.white
 import funny.buildapp.pygerdownload.ui.theme.whiteF4F5FA
+import funny.buildapp.pygerdownload.util.ApkDownloadManager
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Preview
 @Composable
@@ -69,8 +71,10 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
         dialog = {
             UpgradeDialog(
                 visible = uiState.hasUpdate,
-                isForceUpdate = false,
-                isDownloading = false,
+                isForceUpdate = uiState.isForceUpdate,
+                isDownloading = uiState.isDownloading,
+                updateContent= uiState.updateContent,
+                progress = uiState.updateProcess,
                 onDismiss = { dispatch(HomeUiAction.ShowUpdate) },
                 onConfirm = {
                     dispatch(HomeUiAction.ShowUpdate)
@@ -114,6 +118,8 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
 private fun UIEffect(viewModel: HomeViewModel, dispatch: (HomeUiAction) -> Unit) {
     val context = LocalContext.current
     val navigator = LocalNavigator.current
+    val appDownloader = remember { ApkDownloadManager(context) }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         dispatch(HomeUiAction.FetchData)
@@ -131,6 +137,46 @@ private fun UIEffect(viewModel: HomeViewModel, dispatch: (HomeUiAction) -> Unit)
 
                 is HomeUiEffect.GoDetail -> {
                     navigator.push(AppRoute.Detail(1))
+                }
+
+                is HomeUiEffect.DownLoadApp -> {
+                    val downloadId = appDownloader.download(it.url, "app-release.apk")
+                    downloadId.loge()
+                    coroutineScope.launch {
+                        var isDownloading = true
+                        while (isDownloading) {
+                            val (progress, status) = appDownloader.queryProgress(downloadId)
+                            dispatch(HomeUiAction.UpdateDownloadProgress(progress))
+
+                            // 检查下载状态
+                            when (status) {
+                                DownloadManager.STATUS_SUCCESSFUL -> {
+                                    // 下载完成
+                                    dispatch(HomeUiAction.ShowUpdate)
+                                    dispatch(HomeUiAction.UpdateDownloadProgress(100))
+                                    val downloadUrl = appDownloader.getDownloadedUri(downloadId)
+                                    appDownloader.installApk(context,downloadUrl)
+                                    isDownloading = false
+                                }
+
+                                DownloadManager.STATUS_FAILED -> {
+                                    // 下载失败
+                                    isDownloading = false
+                                }
+
+                                -1 -> {
+                                    // 查询失败，可能下载已被取消
+                                    isDownloading = false
+                                }
+
+                                else -> {
+                                    // 继续查询
+                                    delay(500) // 每 0.5s 更新一次
+                                }
+                            }
+                        }
+                    }
+
                 }
             }
         }

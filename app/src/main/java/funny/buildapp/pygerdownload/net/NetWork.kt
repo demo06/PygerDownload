@@ -3,6 +3,7 @@ package funny.buildapp.pygerdownload.net
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import funny.buildapp.clauncher.util.log
+import funny.buildapp.pygerdownload.util.Constants.BASE_URL
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -16,7 +17,6 @@ import retrofit2.converter.moshi.MoshiConverterFactory
  * @date 2022/6/16
  */
 object NetWork {
-    const val BASE_URL = "https://www.pgyer.com/"
     private val loggingInterceptor = HttpLoggingInterceptor {
         it.log("Retrofit===>")
     }.setLevel(HttpLoggingInterceptor.Level.BODY)

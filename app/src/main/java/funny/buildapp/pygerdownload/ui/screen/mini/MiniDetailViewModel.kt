@@ -13,6 +13,8 @@ import funny.buildapp.clauncher.util.log
 import funny.buildapp.clauncher.util.toast
 import funny.buildapp.pygerdownload.net.NetWork
 import funny.buildapp.pygerdownload.util.BaseMviViewModel
+import funny.buildapp.pygerdownload.util.Constants
+import funny.buildapp.pygerdownload.util.Constants.BASE_URL
 
 class MiniDetailViewModel : BaseMviViewModel<MiniDetailUiState, MiniDetailUiAction, MiniDetailUiEffect>(MiniDetailUiState()) {
 
@@ -85,7 +87,7 @@ class MiniDetailViewModel : BaseMviViewModel<MiniDetailUiState, MiniDetailUiActi
     }
 
     private fun downloadMiniApp(appKey: String, password: String, appName: String) {
-        val url = "${NetWork.BASE_URL}apiv2/app/install?_api_key=${R.attr.apiKey}&appKey=$appKey&buildPassword=$password"
+        val url = "${BASE_URL}apiv2/app/install?_api_key=${Constants.API_KEY}&appKey=$appKey&buildPassword=$password"
         sendEffect { MiniDetailUiEffect.ShowToast("开始下载 $appName") }
     }
 

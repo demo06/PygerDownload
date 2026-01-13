@@ -13,6 +13,8 @@ import funny.buildapp.clauncher.util.log
 import funny.buildapp.clauncher.util.toast
 import funny.buildapp.pygerdownload.net.NetWork
 import funny.buildapp.pygerdownload.util.BaseMviViewModel
+import funny.buildapp.pygerdownload.util.Constants
+import funny.buildapp.pygerdownload.util.Constants.BASE_URL
 
 class DetailViewModel : BaseMviViewModel<DetailUiState, DetailUiAction, DetailUiEffect>(DetailUiState()) {
 
@@ -45,9 +47,30 @@ class DetailViewModel : BaseMviViewModel<DetailUiState, DetailUiAction, DetailUi
                 buildPassword = "example_password",
                 versionHistory = listOf(
                     VersionInfo("v1.1.1", "20", "3分钟前", 1023213123, "example_app_key", "example_password"),
-                    VersionInfo("v1.1.0", "19", "2天前", 1020213123, "example_app_key_v2", "example_password_v2"),
-                    VersionInfo("v1.0.9", "18", "1周前", 1019213123, "example_app_key_v3", "example_password_v3"),
-                    VersionInfo("v1.0.8", "17", "2周前", 1018213123, "example_app_key_v4", "example_password_v4")
+                    VersionInfo(
+                        "v1.1.0",
+                        "19",
+                        "2天前",
+                        1020213123,
+                        "example_app_key_v2",
+                        "example_password_v2"
+                    ),
+                    VersionInfo(
+                        "v1.0.9",
+                        "18",
+                        "1周前",
+                        1019213123,
+                        "example_app_key_v3",
+                        "example_password_v3"
+                    ),
+                    VersionInfo(
+                        "v1.0.8",
+                        "17",
+                        "2周前",
+                        1018213123,
+                        "example_app_key_v4",
+                        "example_password_v4"
+                    )
                 ),
                 isLoading = false
             )
@@ -65,7 +88,8 @@ class DetailViewModel : BaseMviViewModel<DetailUiState, DetailUiAction, DetailUi
     }
 
     private fun downloadVersion(appKey: String, password: String) {
-        val url = "${NetWork.BASE_URL}apiv2/app/install?_api_key=${R.attr.apiKey}&appKey=$appKey&buildPassword=$password"
+        val url =
+            "${BASE_URL}apiv2/app/install?_api_key=${Constants.API_KEY}&appKey=$appKey&buildPassword=$password"
         // 这里可以添加实际的下载逻辑
         sendEffect { DetailUiEffect.ShowToast("开始下载") }
     }
@@ -91,38 +115,5 @@ class DetailViewModel : BaseMviViewModel<DetailUiState, DetailUiAction, DetailUi
         val intent = Intent(Intent.ACTION_VIEW)
         intent.data = Uri.parse(url)
         context.startActivity(intent)
-    }
-
-    fun gotoDownloadManager(context: Context, url: String) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val granted = ContextCompat.checkSelfPermission(
-                context,
-                android.Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-            if (!granted) {
-                "未授予通知权限，下载将无通知显示".toast(context)
-            }
-        }
-
-        "开始下载".toast(context)
-        url.log()
-
-        val downloadManager =
-            context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-
-        val request = DownloadManager.Request(Uri.parse(url)).apply {
-            setNotificationVisibility(
-                DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
-            )
-            setTitle("应用下载中")
-            setDescription("正在下载更新包")
-            setAllowedOverMetered(true)
-            setAllowedOverRoaming(true)
-            setDestinationInExternalPublicDir(
-                Environment.DIRECTORY_DOWNLOADS,
-                Uri.parse(url).lastPathSegment
-            )
-        }
-        downloadManager.enqueue(request)
     }
 }

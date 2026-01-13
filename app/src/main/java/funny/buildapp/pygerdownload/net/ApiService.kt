@@ -1,5 +1,6 @@
 package funny.buildapp.pygerdownload.net
 
+import funny.buildapp.pygerdownload.model.AppUpdate
 import funny.buildapp.pygerdownload.model.BaseBean
 import funny.buildapp.pygerdownload.model.GroupInfo
 import retrofit2.http.*
@@ -32,6 +33,13 @@ interface ApiService {
         @Query("appKey") appKey: String,
         @Query("buildPassword") buildPassword: String
     ): BaseBean<GroupInfo>
+
+
+    @GET("apiv2/app/check")
+    suspend fun check(
+        @Query("_api_key") apiKey: String,
+        @Query("appKey") appKey: String,
+    ): BaseBean<AppUpdate>
 
 
 }

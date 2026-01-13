@@ -26,7 +26,7 @@ import funny.buildapp.pygerdownload.ui.theme.theme
 
 @Preview
 @Composable
-fun TitleBar(title: String="标题", onBack: (() -> Unit)? = {}) {
+fun TitleBar(title: String = "标题", onBack: (() -> Unit)? = null) {
     Box(
         modifier = Modifier
             .background(theme)
@@ -34,7 +34,6 @@ fun TitleBar(title: String="标题", onBack: (() -> Unit)? = {}) {
             .fillMaxWidth()
             .height(49.dp)
             .background(theme)
-
     ) {
         if (onBack != null) {
             IconButton(

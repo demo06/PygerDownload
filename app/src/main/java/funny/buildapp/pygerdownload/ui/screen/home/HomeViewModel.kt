@@ -1,38 +1,20 @@
-package funny.buildapp.pygerdownload.viewmodel
+package funny.buildapp.pygerdownload.ui.screen.home
 
 import android.Manifest
-import android.R.attr.apiKey
+import android.R
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.net.Network
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
-import android.content.pm.PackageManager
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat.startActivity
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import funny.buildapp.clauncher.util.log
 import funny.buildapp.clauncher.util.toast
-import funny.buildapp.pygerdownload.model.AppInfo
 import funny.buildapp.pygerdownload.net.ApiService
 import funny.buildapp.pygerdownload.net.NetWork
-import funny.buildapp.pygerdownload.net.NetWork.BASE_URL
-import funny.buildapp.pygerdownload.ui.screen.home.HomeUiAction
-import funny.buildapp.pygerdownload.ui.screen.home.HomeUiEffect
-import funny.buildapp.pygerdownload.ui.screen.home.HomeUiState
 import funny.buildapp.pygerdownload.util.BaseMviViewModel
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import okhttp3.internal.notify
-
 
 /**
  * @author WenBin
@@ -41,12 +23,13 @@ import okhttp3.internal.notify
  * @email wenbin@buildapp.fun
  * @date 2022/6/16
  */
-class MainViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(HomeUiState()) {
+class HomeViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(HomeUiState()) {
 
 
     override fun handleAction(action: HomeUiAction) {
         when (action) {
             is HomeUiAction.GoDetail -> sendEffect { HomeUiEffect.GoDetail }
+            is HomeUiAction.GoMINIDetail -> sendEffect { HomeUiEffect.GoMINIDetail }
             is HomeUiAction.ShowUpdate -> changeDownLoadDialogState()
             is HomeUiAction.Update -> {}
             is HomeUiAction.FetchData -> fetchData()
@@ -61,7 +44,7 @@ class MainViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(
     private fun fetchData() {
         setState { copy(isRefreshing = true) }
         request(
-            api = { ApiService.instance().appGroup(_uiState.value.apiKey, _uiState.value.groupKey) },
+            api = { ApiService.Companion.instance().appGroup(_uiState.value.apiKey, _uiState.value.groupKey) },
             onFailed = { setState { copy(isRefreshing = false) } },
             onSuccess = {
                 setState { copy(items = it.apps ?: emptyList(), isRefreshing = false) }
@@ -72,7 +55,7 @@ class MainViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(
 
     private fun downloadApp(appKey: String, password: String) {
         val url =
-            "${BASE_URL}apiv2/app/install?_api_key=${apiKey}&appKey=${appKey}&buildPassword=${password}"
+            "${NetWork.BASE_URL}apiv2/app/install?_api_key=${R.attr.apiKey}&appKey=${appKey}&buildPassword=${password}"
     }
 
 
@@ -121,4 +104,3 @@ class MainViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(
 
 
 }
-

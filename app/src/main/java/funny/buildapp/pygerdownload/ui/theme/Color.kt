@@ -66,7 +66,7 @@ val orangeFFF9F1 = Color(0XFFFFF9F1)
 val orangeC50000 = Color(0XFFC50000)
 
 val blue0072FF = Color(0XFF0072FF)
-val blue0764B4 = Color(0XFF0764B4)
+val blue1890FF = Color(0XFF1890FF)
 val blueD4E3FF = Color(0XFFD4E3FF)
 val blueEFF5F9 = Color(0XFFEFF5F9)
 val greenD1EDE1 = Color(0XFFD1EDE1)

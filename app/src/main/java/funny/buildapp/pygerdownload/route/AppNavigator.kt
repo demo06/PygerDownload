@@ -16,7 +16,4 @@ class AppNavigator(
 }
 
 
-
-val LocalNavigator = staticCompositionLocalOf<AppNavigator> {
-    error("LocalNavigator not provided")
-}
+val LocalNavigator = staticCompositionLocalOf { AppNavigator(mutableListOf()) }

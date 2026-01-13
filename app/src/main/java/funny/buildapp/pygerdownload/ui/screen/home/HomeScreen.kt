@@ -1,6 +1,5 @@
 package funny.buildapp.pygerdownload.ui.screen.home
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,8 +19,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
@@ -31,8 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,33 +35,32 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import funny.buildapp.clauncher.util.click
+import funny.buildapp.clauncher.util.toast
 import funny.buildapp.pygerdownload.R
+import funny.buildapp.pygerdownload.route.AppRoute
+import funny.buildapp.pygerdownload.route.LocalNavigator
 import funny.buildapp.pygerdownload.ui.component.Screen
+import funny.buildapp.pygerdownload.ui.component.TitleBar
 import funny.buildapp.pygerdownload.ui.component.UpgradeDialog
+import funny.buildapp.pygerdownload.ui.screen.detail.DetailUiEffect
 import funny.buildapp.pygerdownload.ui.theme.black333
 import funny.buildapp.pygerdownload.ui.theme.gray999
 import funny.buildapp.pygerdownload.ui.theme.green07C160
 import funny.buildapp.pygerdownload.ui.theme.theme
 import funny.buildapp.pygerdownload.ui.theme.white
 import funny.buildapp.pygerdownload.ui.theme.whiteF4F5FA
-import funny.buildapp.pygerdownload.viewmodel.MainViewModel
 
 @Preview
 @Composable
-fun HomeScreen(viewModel: MainViewModel = viewModel()) {
+fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
     val dispatch = viewModel::dispatch
-
-    LaunchedEffect(Unit) {
-        dispatch(HomeUiAction.FetchData)
-    }
+    UIEffect(viewModel, dispatch)
     Screen(
         modifier = Modifier.background(whiteF4F5FA),
         titleBar = {
@@ -107,12 +100,42 @@ fun HomeScreen(viewModel: MainViewModel = viewModel()) {
                     })
                 }
             },
-            item = { Item() },
+            item = {
+                Item(onItemClick = {
+                    dispatch(HomeUiAction.GoMINIDetail)
+                })
+            },
         )
 
     }
 }
 
+@Composable
+private fun UIEffect(viewModel: HomeViewModel, dispatch: (HomeUiAction) -> Unit) {
+    val context = LocalContext.current
+    val navigator = LocalNavigator.current
+
+    LaunchedEffect(Unit) {
+        dispatch(HomeUiAction.FetchData)
+    }
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collect {
+            when (it) {
+                is HomeUiEffect.ShowToast -> {
+                    it.msg.toast(context)
+                }
+
+                is HomeUiEffect.GoMINIDetail -> {
+                    navigator.push(AppRoute.MiniDetail(1))
+                }
+
+                is HomeUiEffect.GoDetail -> {
+                    navigator.push(AppRoute.Detail(1))
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun Content(
@@ -166,25 +189,6 @@ private fun Header(topAppCard: @Composable RowScope.(Int) -> Unit = {}) {
     }
 }
 
-
-@Composable
-fun TitleBar(title: String) {
-    Box(
-        modifier = Modifier
-            .background(theme)
-            .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
-            .fillMaxWidth()
-            .height(49.dp)
-            .background(theme)
-
-    ) {
-        Text(
-            text = title, fontSize = 18.sp, color = Color.White, modifier = Modifier.align(
-                Alignment.Center
-            )
-        )
-    }
-}
 
 @Composable
 private fun AppTopCard(
@@ -337,7 +341,7 @@ private fun Item(
 
 
 @Composable
-private fun Tag(text: String = "APP", background: Color = theme) {
+fun Tag(text: String = "APP", background: Color = theme) {
     Text(
         modifier = Modifier
             .background(background, RoundedCornerShape(4.dp))

@@ -13,6 +13,7 @@ data class HomeUiState(
 sealed class HomeUiAction {
     object ShowUpdate : HomeUiAction()
     object GoDetail : HomeUiAction()
+    object GoMINIDetail : HomeUiAction()
     object Update : HomeUiAction()
     object FetchData : HomeUiAction()
     data class Download(val appKey: String, val password: String) : HomeUiAction()
@@ -23,4 +24,5 @@ sealed class HomeUiAction {
 interface HomeUiEffect {
     data class ShowToast(val msg: String) : HomeUiEffect
     data object GoDetail : HomeUiEffect
+    data object GoMINIDetail : HomeUiEffect
 }

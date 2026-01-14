@@ -1,8 +1,10 @@
 package funny.buildapp.pygerdownload.ui.screen.mini
 
+import android.R.attr.description
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -31,10 +34,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil3.compose.AsyncImage
 import funny.buildapp.clauncher.util.click
+import funny.buildapp.clauncher.util.goMiniProgram
 import funny.buildapp.clauncher.util.toast
 import funny.buildapp.pygerdownload.R
+import funny.buildapp.pygerdownload.model.MiniInfo
 import funny.buildapp.pygerdownload.route.LocalNavigator
 import funny.buildapp.pygerdownload.ui.component.Screen
 import funny.buildapp.pygerdownload.ui.component.TitleBar
@@ -48,10 +52,11 @@ import funny.buildapp.pygerdownload.ui.theme.whiteF4F5FA
 
 @Preview
 @Composable
-fun MiniDetailScreen(viewModel: MiniDetailViewModel = viewModel()) {
+fun MiniDetailScreen(item: MiniInfo = MiniInfo(), viewModel: MiniDetailViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val dispatch = viewModel::dispatch
-    UIEffect(viewModel, dispatch)
+
+    UIEffect(item, viewModel, dispatch)
     Screen(
         modifier = Modifier.background(whiteF4F5FA),
         titleBar = {
@@ -61,10 +66,11 @@ fun MiniDetailScreen(viewModel: MiniDetailViewModel = viewModel()) {
         Content(
             appInfo = {
                 AppInfoCard(
-                    appName = uiState.appName ?: "环球钢材",
-                    iconUrl = uiState.appIcon ?: "",
-                    description = uiState.appDescription ?: "",
-                    onDownloadClick = { dispatch(MiniDetailUiAction.Download) }
+                    appName = uiState.item.appName,
+                    iconUrl = uiState.item.appIcon,
+                    description = uiState.item.appFullDescription,
+                    onPreviewClick = { dispatch(MiniDetailUiAction.GoPreview) },
+                    onReleaseClick = { dispatch(MiniDetailUiAction.GoRelease) }
                 )
             },
         )
@@ -72,17 +78,27 @@ fun MiniDetailScreen(viewModel: MiniDetailViewModel = viewModel()) {
 }
 
 @Composable
-private fun UIEffect(viewModel: MiniDetailViewModel, dispatch: (MiniDetailUiAction) -> Unit) {
+private fun UIEffect(item: MiniInfo, viewModel: MiniDetailViewModel, dispatch: (MiniDetailUiAction) -> Unit) {
     val navigator = LocalNavigator.current
     val effect by viewModel.effect.collectAsState(initial = null)
+    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    LaunchedEffect(Unit) {
-        dispatch(MiniDetailUiAction.FetchData)
+    LaunchedEffect(item) {
+        dispatch(MiniDetailUiAction.FetchData(item))
     }
 
     LaunchedEffect(effect) {
         effect?.let {
             when (it) {
+                is MiniDetailUiEffect.GoMini -> {
+                    goMiniProgram(
+                        context = context,
+                        originalId = uiState.item.appOriginalId,
+                        path = uiState.item.appPath,
+                        isPreview = it.isPreview
+                    )
+                }
+
                 is MiniDetailUiEffect.GoBack -> {
                     navigator.pop()
                 }
@@ -111,9 +127,10 @@ private fun Content(
 @Composable
 private fun AppInfoCard(
     appName: String = "环球钢材",
-    iconUrl: String = "",
+    @DrawableRes iconUrl: Int = R.mipmap.icon_wlb,
     description: String = "",
-    onDownloadClick: () -> Unit = {}
+    onPreviewClick: () -> Unit = {},
+    onReleaseClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -127,11 +144,9 @@ private fun AppInfoCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
 
-            AsyncImage(
-                model = iconUrl,
+            Image(
+                painter = painterResource(iconUrl),
                 contentDescription = "icon",
-                placeholder = painterResource(R.mipmap.zgw),
-                error = painterResource(R.mipmap.zgw),
                 modifier = Modifier
                     .size(64.dp)
                     .clip(RoundedCornerShape(12.dp))
@@ -162,7 +177,7 @@ private fun AppInfoCard(
                 modifier = Modifier
                     .weight(1f)
                     .background(blue1890FF, RoundedCornerShape(30.dp))
-                    .click(onDownloadClick)
+                    .click(onPreviewClick)
                     .padding(horizontal = 20.dp, vertical = 10.dp),
                 color = Color.White,
                 textAlign = TextAlign.Center,
@@ -175,7 +190,7 @@ private fun AppInfoCard(
                 modifier = Modifier
                     .weight(1f)
                     .background(green07C160, RoundedCornerShape(30.dp))
-                    .click(onDownloadClick)
+                    .click(onReleaseClick)
                     .padding(horizontal = 20.dp, vertical = 10.dp),
                 color = Color.White,
                 textAlign = TextAlign.Center,

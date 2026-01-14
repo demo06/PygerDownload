@@ -1,6 +1,8 @@
 package funny.buildapp.pygerdownload.model
 
+import androidx.annotation.DrawableRes
 import funny.buildapp.clauncher.util.timeDiff
+import funny.buildapp.pygerdownload.R
 
 /**
  * 组信息
@@ -46,6 +48,15 @@ data class AppInfo(
 
 }
 
+
+data class MiniInfo(
+    val appPath: String = "",
+    val appDescription: String = "",
+    val appFullDescription: String = "",
+    @DrawableRes val appIcon: Int = R.mipmap.zgw,
+    val appOriginalId: String = "",
+    val appName: String = "",
+)
 
 data class AppUpdate(
     val appKey: String? = "",

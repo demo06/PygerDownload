@@ -26,6 +26,8 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
 import androidx.core.net.toUri
+import com.tencent.mm.opensdk.modelbiz.WXLaunchMiniProgram
+import com.tencent.mm.opensdk.openapi.WXAPIFactory
 import funny.buildapp.pygerdownload.util.Constants
 import funny.buildapp.pygerdownload.util.Constants.BASE_URL
 
@@ -124,3 +126,18 @@ fun String.gotoBrowserDownload(context: Context) {
 fun downloadUrl(appkey: String, passwrod: String): String =
     "${BASE_URL}apiv2/app/install?_api_key=${Constants.API_KEY}&appKey=${appkey}&buildPassword=${passwrod}"
 
+
+fun goMiniProgram(context: Context, originalId: String, path: String, isPreview: Boolean = true) {
+    val api = WXAPIFactory.createWXAPI(context, Constants.WECHAT_APP_ID)
+    if (!api.isWXAppInstalled) {
+        "请先安装微信".toast(context)
+        return
+    }
+    val req = WXLaunchMiniProgram.Req()
+    req.userName = originalId // 填小程序原始id
+    req.path = path
+    req.miniprogramType =
+        if (isPreview) WXLaunchMiniProgram.Req.MINIPROGRAM_TYPE_PREVIEW
+        else WXLaunchMiniProgram.Req.MINIPTOGRAM_TYPE_RELEASE
+    api.sendReq(req)
+}

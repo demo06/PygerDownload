@@ -6,8 +6,8 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
-import funny.buildapp.pygerdownload.ui.screen.home.HomeScreen
 import funny.buildapp.pygerdownload.ui.screen.detail.DetailScreen
+import funny.buildapp.pygerdownload.ui.screen.home.HomeScreen
 import funny.buildapp.pygerdownload.ui.screen.mini.MiniDetailScreen
 
 
@@ -24,7 +24,7 @@ fun AppNavHost() {
             when (key) {
                 is AppRoute.AppHome -> NavEntry(key) { HomeScreen() }
                 is AppRoute.Detail -> NavEntry(key) { DetailScreen() }
-                is AppRoute.MiniDetail -> NavEntry(key) { MiniDetailScreen() }
+                is AppRoute.MiniDetail -> NavEntry(key) { MiniDetailScreen(key.item) }
                 else -> NavEntry(Unit) { HomeScreen() }
             }
         }

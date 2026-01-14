@@ -1,6 +1,9 @@
 package funny.buildapp.pygerdownload.ui.screen.home
 
+import android.R.attr.description
 import android.app.DownloadManager
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,6 +18,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -30,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -42,6 +49,7 @@ import funny.buildapp.clauncher.util.click
 import funny.buildapp.clauncher.util.loge
 import funny.buildapp.clauncher.util.toast
 import funny.buildapp.pygerdownload.R
+import funny.buildapp.pygerdownload.model.MiniInfo
 import funny.buildapp.pygerdownload.route.AppRoute
 import funny.buildapp.pygerdownload.route.LocalNavigator
 import funny.buildapp.pygerdownload.ui.component.Screen
@@ -61,19 +69,20 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
+    val listSate = rememberLazyListState()
     val dispatch = viewModel::dispatch
-    UIEffect(viewModel, dispatch)
+    UIEffect(viewModel, listSate, uiState, dispatch)
     Screen(
         modifier = Modifier.background(whiteF4F5FA),
         titleBar = {
-            TitleBar(title = "蒲公英商店")
+            TitleBar(title = "中钢网应用集")
         },
         dialog = {
             UpgradeDialog(
                 visible = uiState.hasUpdate,
                 isForceUpdate = uiState.isForceUpdate,
                 isDownloading = uiState.isDownloading,
-                updateContent= uiState.updateContent,
+                updateContent = uiState.updateContent,
                 progress = uiState.updateProcess,
                 onDismiss = { dispatch(HomeUiAction.ShowUpdate) },
                 onConfirm = {
@@ -83,6 +92,8 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
         }
     ) {
         Content(
+            listSate = listSate,
+            miniList = uiState.miniItems ?: emptyList(),
             isRefreshing = uiState.isRefreshing,
             dispatch = viewModel::dispatch,
             header = {
@@ -104,10 +115,15 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                     })
                 }
             },
-            item = {
-                Item(onItemClick = {
-                    dispatch(HomeUiAction.GoMINIDetail)
-                })
+            item = { item ->
+                Item(
+                    appName = item.appName,
+                    iconUrl = item.appIcon,
+                    description = item.appDescription,
+                    onItemClick = {
+                        dispatch(HomeUiAction.GoMINIDetail(item))
+                    },
+                )
             },
         )
 
@@ -115,14 +131,23 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
 }
 
 @Composable
-private fun UIEffect(viewModel: HomeViewModel, dispatch: (HomeUiAction) -> Unit) {
+private fun UIEffect(
+    viewModel: HomeViewModel,
+    listSate: LazyListState,
+    uiState: HomeUiState,
+    dispatch: (HomeUiAction) -> Unit
+) {
     val context = LocalContext.current
     val navigator = LocalNavigator.current
     val appDownloader = remember { ApkDownloadManager(context) }
     val coroutineScope = rememberCoroutineScope()
 
+
     LaunchedEffect(Unit) {
         dispatch(HomeUiAction.FetchData)
+    }
+    LaunchedEffect(uiState) {
+        listSate.animateScrollToItem(0)
     }
     LaunchedEffect(viewModel) {
         viewModel.effect.collect {
@@ -132,7 +157,7 @@ private fun UIEffect(viewModel: HomeViewModel, dispatch: (HomeUiAction) -> Unit)
                 }
 
                 is HomeUiEffect.GoMINIDetail -> {
-                    navigator.push(AppRoute.MiniDetail(1))
+                    navigator.push(AppRoute.MiniDetail(it.item))
                 }
 
                 is HomeUiEffect.GoDetail -> {
@@ -155,7 +180,7 @@ private fun UIEffect(viewModel: HomeViewModel, dispatch: (HomeUiAction) -> Unit)
                                     dispatch(HomeUiAction.ShowUpdate)
                                     dispatch(HomeUiAction.UpdateDownloadProgress(100))
                                     val downloadUrl = appDownloader.getDownloadedUri(downloadId)
-                                    appDownloader.installApk(context,downloadUrl)
+                                    appDownloader.installApk(context, downloadUrl)
                                     isDownloading = false
                                 }
 
@@ -185,9 +210,11 @@ private fun UIEffect(viewModel: HomeViewModel, dispatch: (HomeUiAction) -> Unit)
 
 @Composable
 private fun Content(
+    miniList: List<MiniInfo> = emptyList(),
+    listSate: LazyListState = rememberLazyListState(),
     isRefreshing: Boolean,
     header: @Composable () -> Unit,
-    item: @Composable () -> Unit = {},
+    item: @Composable (MiniInfo) -> Unit = {},
     dispatch: (HomeUiAction) -> Unit
 ) {
     val state = rememberPullToRefreshState()
@@ -207,12 +234,15 @@ private fun Content(
             )
         },
     ) {
-        LazyColumn(Modifier.fillMaxSize()) {
+        LazyColumn(
+            Modifier.fillMaxSize(),
+            state = listSate
+        ) {
             item {
                 header()
             }
-            items(10) {
-                item()
+            items(miniList) {
+                item(it)
             }
 
         }
@@ -292,15 +322,11 @@ private fun AppTopCard(
     }
 }
 
-@Preview
 @Composable
 private fun Item(
     appName: String = "抢钢宝",
-    iconUrl: String = "",
-    versionName: String = "v1.1.1",
-    versionCode: String = "20",
-    buildFileSize: Int = 1023213123,
-    buildCreated: String = "3分钟前",
+    @DrawableRes iconUrl: Int,
+    description: String = "简介",
     onItemClick: () -> Unit = {},
 ) {
     Row(
@@ -313,11 +339,9 @@ private fun Item(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        AsyncImage(
-            model = iconUrl,
+        Image(
+            painter = painterResource(iconUrl),
             contentDescription = "icon",
-            placeholder = painterResource(R.mipmap.qgb),
-            error = painterResource(R.mipmap.qgb),
             modifier = Modifier
                 .padding(8.dp)
                 .size(48.dp)
@@ -342,8 +366,6 @@ private fun Item(
                     fontSize = 16.sp,
                 )
                 Spacer(Modifier.width(8.dp))
-                Tag()
-                Spacer(Modifier.width(4.dp))
                 Tag("MINI", green07C160)
             }
             Spacer(Modifier.height(8.dp))
@@ -351,26 +373,15 @@ private fun Item(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(versionName, color = Color(0xFF5A5858), fontSize = 14.sp)
-                Text(
-                    " | ",
-                    color = Color(0xFFA1A0A0),
-                    fontSize = 14.sp,
-                )
-                Text(versionCode, color = Color(0xFF5A5858), fontSize = 14.sp)
-                Text(
-                    " | ",
-                    color = Color(0xFFA1A0A0),
-                    fontSize = 14.sp,
-                )
-                Text("${buildFileSize / 1024 / 1024}M", color = Color(0xFF5A5858), fontSize = 14.sp)
+                Text(description, color = Color(0xFF5A5858), fontSize = 14.sp)
+//                Text("${buildFileSize / 1024 / 1024}M", color = Color(0xFF5A5858), fontSize = 14.sp)
             }
 
 
         }
 
         Text(
-            "下载",
+            "查看",
             fontWeight = FontWeight.Medium,
             modifier = Modifier
                 .padding(top = 8.dp)

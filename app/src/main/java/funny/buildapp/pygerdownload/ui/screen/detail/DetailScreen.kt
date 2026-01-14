@@ -1,7 +1,5 @@
 package funny.buildapp.pygerdownload.ui.screen.detail
 
-import android.R.attr.versionCode
-import android.R.attr.versionName
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -36,6 +34,7 @@ import funny.buildapp.clauncher.util.click
 import funny.buildapp.clauncher.util.toast
 import funny.buildapp.pygerdownload.R
 import funny.buildapp.pygerdownload.model.AppInfo
+import funny.buildapp.pygerdownload.model.Version
 import funny.buildapp.pygerdownload.route.LocalNavigator
 import funny.buildapp.pygerdownload.ui.component.Screen
 import funny.buildapp.pygerdownload.ui.component.TitleBar
@@ -43,6 +42,7 @@ import funny.buildapp.pygerdownload.ui.screen.home.Tag
 import funny.buildapp.pygerdownload.ui.theme.black333
 import funny.buildapp.pygerdownload.ui.theme.gray999
 import funny.buildapp.pygerdownload.ui.theme.green07C160
+import funny.buildapp.pygerdownload.ui.theme.orangeFF7400
 import funny.buildapp.pygerdownload.ui.theme.theme
 import funny.buildapp.pygerdownload.ui.theme.white
 import funny.buildapp.pygerdownload.ui.theme.whiteF4F5FA
@@ -54,6 +54,7 @@ fun DetailScreen(item: AppInfo = AppInfo(), viewModel: DetailViewModel = viewMod
     val dispatch = viewModel::dispatch
     UiEffect(viewModel, item)
     Screen(
+        isLoading = uiState.isLoading,
         modifier = Modifier.background(whiteF4F5FA),
         titleBar = {
             TitleBar(
@@ -70,13 +71,15 @@ fun DetailScreen(item: AppInfo = AppInfo(), viewModel: DetailViewModel = viewMod
                     versionCode = uiState.appInfo.buildBuildVersion ?: "1",
                     buildFileSize = uiState.appInfo.buildFileSize?.toInt() ?: 1023213123,
                     buildCreated = uiState.appInfo.getTime(),
+                    packageName = uiState.appInfo.buildIdentifier ?: "",
+                    isPreview = uiState.appInfo.buildUpdateDescription?.contains("测试包") == true,
                     iconUrl = uiState.appInfo.buildIcon ?: "112312",
                     onDownloadClick = { dispatch(DetailUiAction.Download) }
                 )
             },
             versionHistory = {
                 VersionHistoryCard(
-                    versionHistory = uiState.versionHistory.orEmpty(),
+                    versionHistory = uiState.versionHistory?.list.orEmpty(),
                     onItemClick = { index -> dispatch(DetailUiAction.SelectVersion(index)) }
                 )
             }
@@ -132,7 +135,9 @@ private fun AppInfoCard(
     versionName: String = "v1.1.1",
     versionCode: String = "20",
     buildFileSize: Int = 1023213123,
+    packageName: String = "funny.buildapp.pgyerdownloader",
     buildCreated: String = "3分钟前",
+    isPreview: Boolean = false,
     iconUrl: String = "12312",
     onDownloadClick: () -> Unit = {}
 ) {
@@ -178,8 +183,12 @@ private fun AppInfoCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Tag()
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Tag("MINI", green07C160)
+                        Spacer(Modifier.width(8.dp))
+                        if (isPreview) {
+                            Tag("测试线", orangeFF7400)
+                        } else {
+                            Tag("正式线", green07C160)
+                        }
                     }
                 }
             }
@@ -190,7 +199,7 @@ private fun AppInfoCard(
                 modifier = Modifier
                     .background(theme, RoundedCornerShape(30.dp))
                     .click(onDownloadClick)
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
                 color = Color.White,
                 fontSize = 16.sp
             )
@@ -199,7 +208,8 @@ private fun AppInfoCard(
         Spacer(modifier = Modifier.height(20.dp))
 
         Column {
-            InfoRow("版本", versionName)
+            InfoRow("包名", packageName)
+            InfoRow("版本", "v${versionName}")
             InfoRow("版本号(Build)", versionCode)
             InfoRow("大小", "${buildFileSize / 1024 / 1024}M")
             InfoRow("更新时间", buildCreated)
@@ -209,7 +219,7 @@ private fun AppInfoCard(
 
 @Composable
 private fun VersionHistoryCard(
-    versionHistory: List<VersionInfo> = emptyList(),
+    versionHistory: List<Version> = emptyList(),
     onItemClick: (Int) -> Unit = {}
 ) {
     Column(
@@ -229,11 +239,12 @@ private fun VersionHistoryCard(
 
         versionHistory.forEachIndexed { index, version ->
             VersionItem(
-                versionName = version.versionName,
-                versionCode = version.versionCode,
-                buildCreated = version.buildCreated,
-                buildFileSize = version.buildFileSize,
+                versionName = version.buildVersion ?: "v1.0.0",
+                versionCode = version.buildBuildVersion ?: "",
+                buildCreated = version.getTime(),
+                buildFileSize = version.buildFileSize?.toInt() ?: 96022313,
                 isLatest = index == 0,
+                isPreview = version.buildUpdateDescription?.contains("测试包") == true,
                 onItemClick = { onItemClick(index) }
             )
             if (index < versionHistory.size - 1) {
@@ -250,6 +261,7 @@ private fun VersionItem(
     buildCreated: String = "2天前",
     buildFileSize: Int = 1020213123,
     isLatest: Boolean = false,
+    isPreview: Boolean = false,
     onItemClick: () -> Unit = {}
 ) {
     Row(
@@ -265,7 +277,7 @@ private fun VersionItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    versionName,
+                    "v$versionName",
                     color = black333,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
@@ -273,6 +285,13 @@ private fun VersionItem(
                 if (isLatest) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Tag("最新", green07C160)
+                } else {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    if (isPreview) {
+                        Tag("测试版", orangeFF7400)
+                    } else {
+                        Tag("正式版", green07C160)
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(4.dp))

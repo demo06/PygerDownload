@@ -77,3 +77,32 @@ data class AppUpdate(
     val forceUpdateVersionNo: String? = "",
     val needForceUpdate: Boolean? = false
 )
+
+
+data class AppVersionHistory(
+    val list: List<Version> = listOf()
+)
+
+data class Version(
+    val buildBuildVersion: String? = "",
+    val buildCreated: String? = "",
+    val buildDownloadCount: Int? = 0,
+    val buildExtendsIsPublish: String? = "",
+    val buildExtendsTimingDate: String? = "",
+    val buildFileName: String? = "",
+    val buildFileSize: String? = "",
+    val buildIcon: String? = "",
+    val buildIdentifier: String? = "",
+    val buildIsDisplayInHistory: String? = "",
+    val buildIsLastest: String? = "",
+    val buildIsPublishComplete: String? = "",
+    val buildKey: String? = "",
+    val buildLauncherActivity: String? = "",
+    val buildName: String? = "",
+    val buildType: String? = "",
+    val buildUpdateDescription: String? = "",
+    val buildVersion: String? = "",
+    val buildVersionNo: String? = ""
+) {
+    fun getTime(): String = timeDiff(this.buildCreated ?: "")
+}

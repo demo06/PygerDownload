@@ -5,6 +5,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -21,6 +22,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
@@ -37,7 +39,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -303,7 +308,7 @@ private fun AppTopCard(
             fontSize = 16.sp,
             modifier = Modifier.padding(bottom = 6.dp)
         )
-        Text(versionName, color = gray999, fontSize = 14.sp)
+        Text("v${versionName}", color = gray999, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(6.dp))
         Text(createdTime, color = gray999, fontSize = 14.sp)
         Text(
@@ -364,7 +369,7 @@ private fun Item(
                     fontSize = 16.sp,
                 )
                 Spacer(Modifier.width(8.dp))
-                Tag("MINI", green07C160)
+                Tag("小程序", green07C160)
             }
             Spacer(Modifier.height(8.dp))
             Row(
@@ -397,13 +402,23 @@ private fun Item(
 
 @Composable
 fun Tag(text: String = "APP", background: Color = theme) {
-    Text(
+    Box(
         modifier = Modifier
             .background(background, RoundedCornerShape(4.dp))
-            .padding(horizontal = 4.dp, vertical = 2.dp),
-        text = text,
-        fontSize = 12.sp,
-        color = white
-    )
-
+            .height(20.dp) // 1. 强制设定一个高度 (根据你的 12.sp 字体，20-22dp 比较合适)
+            .padding(horizontal = 4.dp), // 2. 只保留水平 padding，垂直方向靠居中
+        contentAlignment = Alignment.Center // 3. 让文字绝对居中
+    ) {
+        Text(
+            text = text,
+            fontSize = 12.sp,
+            color = white,
+            // 4. (可选) 移除文字默认的上下留白，让居中更精确
+            style = TextStyle(
+                platformStyle = PlatformTextStyle(
+                    includeFontPadding = false
+                )
+            )
+        )
+    }
 }

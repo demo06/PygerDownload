@@ -1,6 +1,7 @@
 package funny.buildapp.pygerdownload.net
 
 import funny.buildapp.pygerdownload.model.AppUpdate
+import funny.buildapp.pygerdownload.model.AppVersionHistory
 import funny.buildapp.pygerdownload.model.BaseBean
 import funny.buildapp.pygerdownload.model.GroupInfo
 import retrofit2.http.*
@@ -40,6 +41,14 @@ interface ApiService {
         @Query("_api_key") apiKey: String,
         @Query("appKey") appKey: String,
     ): BaseBean<AppUpdate>
+
+    @FormUrlEncoded
+    @POST("apiv2/app/builds")
+    suspend fun versionHistory(
+        @Field("_api_key") apiKey: String,
+        @Field("appKey") appKey: String,
+        @Field("page") page: Int,
+    ): BaseBean<AppVersionHistory>
 
 
 }

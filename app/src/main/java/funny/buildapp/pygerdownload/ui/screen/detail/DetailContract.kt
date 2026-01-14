@@ -1,11 +1,12 @@
 package funny.buildapp.pygerdownload.ui.screen.detail
 
 import funny.buildapp.pygerdownload.model.AppInfo
+import funny.buildapp.pygerdownload.model.AppVersionHistory
 
 data class DetailUiState(
     val isLoading: Boolean = false,
     val appInfo: AppInfo = AppInfo(),
-    val versionHistory: List<VersionInfo>? = null
+    val versionHistory: AppVersionHistory? = null
 )
 
 sealed class DetailUiAction {
@@ -20,12 +21,3 @@ interface DetailUiEffect {
     data class ShowToast(val msg: String) : DetailUiEffect
     data object GoBack : DetailUiEffect
 }
-
-data class VersionInfo(
-    val versionName: String,
-    val versionCode: String,
-    val buildCreated: String,
-    val buildFileSize: Int,
-    val appKey: String? = null,
-    val buildPassword: String? = null
-)

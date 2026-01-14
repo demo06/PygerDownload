@@ -1,6 +1,7 @@
 package funny.buildapp.pygerdownload.ui.screen.detail
 
 import funny.buildapp.pygerdownload.model.AppInfo
+import funny.buildapp.pygerdownload.net.ApiService
 import funny.buildapp.pygerdownload.util.BaseMviViewModel
 import funny.buildapp.pygerdownload.util.Constants
 import funny.buildapp.pygerdownload.util.Constants.BASE_URL
@@ -23,48 +24,25 @@ class DetailViewModel : BaseMviViewModel<DetailUiState, DetailUiAction, DetailUi
 
     private fun fetchData(item: AppInfo) {
         setState { copy(appInfo = item) }
-        // 模拟数据获取
-//        setState {
-//            copy(
-//                appName = "抢钢宝",
-//                versionName = "v1.1.1",
-//                versionCode = "20",
-//                buildFileSize = 1023213123,
-//                buildCreated = "3分钟前",
-//                iconUrl = "",
-//                appKey = "example_app_key",
-//                buildPassword = "example_password",
-//                versionHistory = listOf(
-//                    VersionInfo("v1.1.1", "20", "3分钟前", 1023213123, "example_app_key", "example_password"),
-//                    VersionInfo(
-//                        "v1.1.0",
-//                        "19",
-//                        "2天前",
-//                        1020213123,
-//                        "example_app_key_v2",
-//                        "example_password_v2"
-//                    ),
-//                    VersionInfo(
-//                        "v1.0.9",
-//                        "18",
-//                        "1周前",
-//                        1019213123,
-//                        "example_app_key_v3",
-//                        "example_password_v3"
-//                    ),
-//                    VersionInfo(
-//                        "v1.0.8",
-//                        "17",
-//                        "2周前",
-//                        1018213123,
-//                        "example_app_key_v4",
-//                        "example_password_v4"
-//                    )
-//                ),
-//                isLoading = false
-//            )
-//        }
+        getAppVersionHistory()
     }
+
+
+    private fun getAppVersionHistory() {
+        setState { copy(isLoading = true) }
+        request(
+            api = {
+                ApiService.instance()
+                    .versionHistory(Constants.API_KEY, _uiState.value.appInfo.appKey ?: "", 1)
+            },
+            onFailed = { setState { copy(isLoading = false) } },
+            onSuccess = {
+                setState { copy(versionHistory = it, isLoading = false) }
+
+            }
+        )
+    }
+
 
     private fun downloadApp() {
 //        val appKey = _uiState.value.appKey
@@ -84,9 +62,9 @@ class DetailViewModel : BaseMviViewModel<DetailUiState, DetailUiAction, DetailUi
     }
 
     private fun selectVersion(index: Int) {
-        val versionHistory = _uiState.value.versionHistory
-        if (versionHistory != null && index in versionHistory.indices) {
-            val selectedVersion = versionHistory[index]
+//        val versionHistory = _uiState.value.versionHistory
+//        if (versionHistory != null && index in versionHistory.indices) {
+//            val selectedVersion = versionHistory[index]
 //            setState {
 //                copy(
 //                    versionName = selectedVersion.versionName,
@@ -97,7 +75,7 @@ class DetailViewModel : BaseMviViewModel<DetailUiState, DetailUiAction, DetailUi
 //                    buildPassword = selectedVersion.buildPassword
 //                )
 //            }
-        }
+//        }
     }
 
 }

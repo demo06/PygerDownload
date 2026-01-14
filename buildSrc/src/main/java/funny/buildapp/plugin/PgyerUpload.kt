@@ -9,11 +9,19 @@ import java.io.File
 import java.io.IOException
 
 
+
+open class PgyerConfig {
+    var updateDescription: String = "版本更新"
+    var apiKey: String = "955873f76198c4d20e6478e2a9103fc8"
+}
+
 class PgyerUpload : Plugin<Project> {
     private val okHttpClient = OkHttpClient()
     val uploadUrl = "https://www.pgyer.com/apiv2/app/upload"
 
     override fun apply(project: Project) {
+        val config = project.extensions.create("pgyer", PgyerConfig::class.java)
+
         project.task("upload") { task ->
             task.doLast {
                 val apkPath =
@@ -26,7 +34,7 @@ class PgyerUpload : Plugin<Project> {
                     if (files != null) {
                         if (files.isNotEmpty()) {
                             val file = files[0]
-                            uploadApk(file, file.name)
+                            uploadApk(file, file.name, config)
                         }
                     }
                 }
@@ -36,11 +44,14 @@ class PgyerUpload : Plugin<Project> {
     }
 
 
-    private fun uploadApk(file: File, fileName: String) {
+    private fun uploadApk(file: File, fileName: String, config: PgyerConfig) {
         val body = file.asRequestBody("multipart/form-data".toMediaType())
         val formBody = MultipartBody.Builder().setType(MultipartBody.FORM)
-            .addFormDataPart("_api_key", "955873f76198c4d20e6478e2a9103fc8")
+            .addFormDataPart("_api_key", config.apiKey)
             .addFormDataPart("file", fileName, body)
+            .addFormDataPart(
+                "buildUpdateDescription", config.updateDescription
+            )
             .build()
         val request = Request.Builder()
             .url(uploadUrl)

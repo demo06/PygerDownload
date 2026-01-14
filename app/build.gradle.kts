@@ -90,3 +90,15 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.wechat.sdk)
 }
+
+configure<funny.buildapp.plugin.PgyerConfig> {
+    updateDescription = """
+        更新内容：
+        1、增加小程序快捷打开功能
+        2、增加应用更新检测
+        3、增加应用详情页面
+        4、增加历史版本下载
+        ===
+        isForceUpdate=false
+    """.trimIndent()
+}

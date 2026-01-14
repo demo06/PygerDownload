@@ -1,7 +1,10 @@
 package funny.buildapp.pygerdownload.ui.screen.detail
 
+import android.app.DownloadManager
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +21,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +41,8 @@ import funny.buildapp.pygerdownload.R
 import funny.buildapp.pygerdownload.model.AppInfo
 import funny.buildapp.pygerdownload.model.Version
 import funny.buildapp.pygerdownload.route.LocalNavigator
+import funny.buildapp.pygerdownload.ui.component.DownLoadButton
+import funny.buildapp.pygerdownload.ui.component.DownloadState
 import funny.buildapp.pygerdownload.ui.component.Screen
 import funny.buildapp.pygerdownload.ui.component.TitleBar
 import funny.buildapp.pygerdownload.ui.screen.home.Tag
@@ -46,13 +53,16 @@ import funny.buildapp.pygerdownload.ui.theme.orangeFF7400
 import funny.buildapp.pygerdownload.ui.theme.theme
 import funny.buildapp.pygerdownload.ui.theme.white
 import funny.buildapp.pygerdownload.ui.theme.whiteF4F5FA
+import funny.buildapp.pygerdownload.util.ApkDownloadManager
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Preview
 @Composable
 fun DetailScreen(item: AppInfo = AppInfo(), viewModel: DetailViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val dispatch = viewModel::dispatch
-    UiEffect(viewModel, item)
+    UiEffect(viewModel, item, dispatch)
     Screen(
         isLoading = uiState.isLoading,
         modifier = Modifier.background(whiteF4F5FA),
@@ -74,13 +84,32 @@ fun DetailScreen(item: AppInfo = AppInfo(), viewModel: DetailViewModel = viewMod
                     packageName = uiState.appInfo.buildIdentifier ?: "",
                     isPreview = uiState.appInfo.buildUpdateDescription?.contains("测试包") == true,
                     iconUrl = uiState.appInfo.buildIcon ?: "112312",
-                    onDownloadClick = { dispatch(DetailUiAction.Download) }
+                    downloadState = uiState.downloadState,
+                    downloadProgress = uiState.downloadProgress,
+                    onDownloadClick = { dispatch(DetailUiAction.Download) },
+                    onInstallClick = { dispatch(DetailUiAction.Install) }
                 )
             },
             versionHistory = {
                 VersionHistoryCard(
                     versionHistory = uiState.versionHistory?.list.orEmpty(),
-                    onItemClick = { index -> dispatch(DetailUiAction.SelectVersion(index)) }
+                    versionDownloadStates = uiState.versionDownloadStates,
+                    versionDownloadProgress = uiState.versionDownloadProgress,
+                    hasMore = uiState.hasMore,
+                    onLoadMore = { dispatch(DetailUiAction.LoadMore) },
+                    onDownloadClick = { index ->
+                        val version = uiState.versionHistory?.list?.getOrNull(index)
+                        if (version != null) {
+                            dispatch(DetailUiAction.StartVersionDownload(
+                                index,
+                                version.buildKey ?: "",
+                                "" // Version doesn't have buildPassword
+                            ))
+                        }
+                    },
+                    onInstallClick = { index ->
+                        dispatch(DetailUiAction.InstallVersion(index))
+                    }
                 )
             }
         )
@@ -88,10 +117,11 @@ fun DetailScreen(item: AppInfo = AppInfo(), viewModel: DetailViewModel = viewMod
 }
 
 @Composable
-private fun UiEffect(viewModel: DetailViewModel, item: AppInfo) {
+private fun UiEffect(viewModel: DetailViewModel, item: AppInfo, dispatch: (DetailUiAction) -> Unit) {
     val context = LocalContext.current
     val navigator = LocalNavigator.current
-    val dispatch = viewModel::dispatch
+    val appDownloader = remember { ApkDownloadManager(context) }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         dispatch(DetailUiAction.FetchData(item))
@@ -106,6 +136,69 @@ private fun UiEffect(viewModel: DetailViewModel, item: AppInfo) {
 
                 is DetailUiEffect.ShowToast -> {
                     it.msg.toast(context)
+                }
+
+                is DetailUiEffect.StartDownload -> {
+                    val downloadId = appDownloader.download(it.url, "${it.appKey}.apk")
+                    coroutineScope.launch {
+                        var isDownloading = true
+                        while (isDownloading) {
+                            val (progress, status) = appDownloader.queryProgress(downloadId)
+                            dispatch(DetailUiAction.UpdateDownloadProgress(progress))
+
+                            when (status) {
+                                DownloadManager.STATUS_SUCCESSFUL -> {
+                                    val downloadUri = appDownloader.getDownloadedUri(downloadId)
+                                    dispatch(DetailUiAction.DownloadCompleted(downloadUri))
+                                    appDownloader.installApk(context, downloadUri) // 自动安装
+                                    isDownloading = false
+                                }
+
+                                DownloadManager.STATUS_FAILED, -1 -> {
+                                    dispatch(DetailUiAction.DownloadFailed)
+                                    isDownloading = false
+                                }
+
+                                else -> {
+                                    delay(500)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                is DetailUiEffect.Install -> {
+                    appDownloader.installApk(context, it.downloadUri)
+                }
+
+                is DetailUiEffect.StartVersionDownload -> {
+                    val index = it.index
+                    val downloadId = appDownloader.download(it.url, "${it.appKey}_v${index}.apk")
+                    coroutineScope.launch {
+                        var isDownloading = true
+                        while (isDownloading) {
+                            val (progress, status) = appDownloader.queryProgress(downloadId)
+                            dispatch(DetailUiAction.UpdateVersionDownloadProgress(index, progress))
+
+                            when (status) {
+                                DownloadManager.STATUS_SUCCESSFUL -> {
+                                    val downloadUri = appDownloader.getDownloadedUri(downloadId)
+                                    dispatch(DetailUiAction.VersionDownloadCompleted(index, downloadUri))
+                                    appDownloader.installApk(context, downloadUri) // 自动安装
+                                    isDownloading = false
+                                }
+
+                                DownloadManager.STATUS_FAILED, -1 -> {
+                                    dispatch(DetailUiAction.VersionDownloadFailed(index))
+                                    isDownloading = false
+                                }
+
+                                else -> {
+                                    delay(500)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -139,7 +232,10 @@ private fun AppInfoCard(
     buildCreated: String = "3分钟前",
     isPreview: Boolean = false,
     iconUrl: String = "12312",
-    onDownloadClick: () -> Unit = {}
+    downloadState: DownloadState = DownloadState.IDLE,
+    downloadProgress: Int = 0,
+    onDownloadClick: () -> Unit = {},
+    onInstallClick: () -> Unit = {}
 ) {
     val imgUrl = if (iconUrl.isEmpty()) {
         "https://cdn-app-icon2.pgyer.com/8/3/b/4/4/83b445401ad8ba82180b599f71fc8109?x-oss-process=image/resize,m_lfit,h_120,w_120/format,jpg"
@@ -192,16 +288,11 @@ private fun AppInfoCard(
                     }
                 }
             }
-
-            Text(
-                "下载",
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .background(theme, RoundedCornerShape(30.dp))
-                    .click(onDownloadClick)
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                color = Color.White,
-                fontSize = 16.sp
+            DownLoadButton(
+                state = downloadState,
+                progress = downloadProgress,
+                onDownloadClick = onDownloadClick,
+                onInstallClick = onInstallClick
             )
         }
 
@@ -220,7 +311,12 @@ private fun AppInfoCard(
 @Composable
 private fun VersionHistoryCard(
     versionHistory: List<Version> = emptyList(),
-    onItemClick: (Int) -> Unit = {}
+    versionDownloadStates: Map<Int, DownloadState> = emptyMap(),
+    versionDownloadProgress: Map<Int, Int> = emptyMap(),
+    hasMore: Boolean = false,
+    onLoadMore: () -> Unit = {},
+    onDownloadClick: (Int) -> Unit = {},
+    onInstallClick: (Int) -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -245,10 +341,35 @@ private fun VersionHistoryCard(
                 buildFileSize = version.buildFileSize?.toInt() ?: 96022313,
                 isLatest = index == 0,
                 isPreview = version.buildUpdateDescription?.contains("测试包") == true,
-                onItemClick = { onItemClick(index) }
+                downloadState = versionDownloadStates[index] ?: DownloadState.IDLE,
+                downloadProgress = versionDownloadProgress[index] ?: 0,
+                onDownloadClick = { onDownloadClick(index) },
+                onInstallClick = { onInstallClick(index) }
             )
             if (index < versionHistory.size - 1) {
                 Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+
+        if (hasMore) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+                    .click { onLoadMore() }
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("点击加载更多", color = theme, fontSize = 14.sp)
+            }
+        } else if (versionHistory.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("没有更多了", color = gray999, fontSize = 12.sp)
             }
         }
     }
@@ -262,7 +383,10 @@ private fun VersionItem(
     buildFileSize: Int = 1020213123,
     isLatest: Boolean = false,
     isPreview: Boolean = false,
-    onItemClick: () -> Unit = {}
+    downloadState: DownloadState = DownloadState.IDLE,
+    downloadProgress: Int = 0,
+    onDownloadClick: () -> Unit = {},
+    onInstallClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -303,15 +427,11 @@ private fun VersionItem(
         }
 
         if (!isLatest) {
-            Text(
-                "下载",
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .background(theme, RoundedCornerShape(20.dp))
-                    .click(onItemClick)
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                color = Color.White,
-                fontSize = 14.sp
+            DownLoadButton(
+                state = downloadState,
+                progress = downloadProgress,
+                onDownloadClick = onDownloadClick,
+                onInstallClick = onInstallClick
             )
         }
     }

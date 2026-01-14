@@ -126,6 +126,9 @@ fun String.gotoBrowserDownload(context: Context) {
 fun downloadUrl(appkey: String, passwrod: String): String =
     "${BASE_URL}apiv2/app/install?_api_key=${Constants.API_KEY}&appKey=${appkey}&buildPassword=${passwrod}"
 
+fun downloadVersionUrl(buildKey: String, passwrod: String): String =
+    "${BASE_URL}apiv2/app/install?_api_key=${Constants.API_KEY}&buildKey=${buildKey}&buildPassword=${passwrod}"
+
 
 fun goMiniProgram(context: Context, originalId: String, path: String, isPreview: Boolean = true) {
     val api = WXAPIFactory.createWXAPI(context, Constants.WECHAT_APP_ID)

@@ -97,4 +97,27 @@ class ApkDownloadManager(private val context: Context) {
         }
         context.startActivity(intent)
     }
+
+    /**
+     * 清除所有已下载的 APK 文件
+     * @return 删除的文件数量
+     */
+    fun clearAllDownloadedApks(): Int {
+        val downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        var deletedCount = 0
+
+        if (downloadDir.exists() && downloadDir.isDirectory) {
+            val apkFiles = downloadDir.listFiles { file ->
+                file.isFile && file.name.endsWith(".apk", ignoreCase = true)
+            }
+
+            apkFiles?.forEach { file ->
+                if (file.delete()) {
+                    deletedCount++
+                }
+            }
+        }
+
+        return deletedCount
+    }
 }

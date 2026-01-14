@@ -55,6 +55,8 @@ import funny.buildapp.pygerdownload.R
 import funny.buildapp.pygerdownload.model.MiniInfo
 import funny.buildapp.pygerdownload.route.AppRoute
 import funny.buildapp.pygerdownload.route.LocalNavigator
+import funny.buildapp.pygerdownload.ui.component.DownLoadButton
+import funny.buildapp.pygerdownload.ui.component.DownloadState
 import funny.buildapp.pygerdownload.ui.component.Screen
 import funny.buildapp.pygerdownload.ui.component.TitleBar
 import funny.buildapp.pygerdownload.ui.component.UpgradeDialog
@@ -104,6 +106,8 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                 if (items.size >= 3) {
                     Header(topAppCard = { index ->
                         val item = items[index]
+                        val appKey = item.appKey ?: ""
+                        val downloadInfo = uiState.appDownloadStates[appKey]
                         AppTopCard(
                             modifier = Modifier.weight(1f),
                             index = index,
@@ -111,7 +115,14 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                             versionName = item.buildVersion ?: "",
                             createdTime = item.getTime(),
                             iconUrl = item.buildIcon ?: "",
-                            onDownloadClick = {},
+                            downloadState = downloadInfo?.state ?: DownloadState.IDLE,
+                            downloadProgress = downloadInfo?.progress ?: 0,
+                            onDownloadClick = {
+                                dispatch(HomeUiAction.StartAppDownload(appKey, item.buildPassword ?: ""))
+                            },
+                            onInstallClick = {
+                                dispatch(HomeUiAction.InstallApp(appKey))
+                            },
                             onItemClick = {
                                 dispatch(HomeUiAction.GoDetail(item))
                             })
@@ -206,6 +217,54 @@ private fun UIEffect(
                     }
 
                 }
+
+                // 新增：处理单个应用下载
+                is HomeUiEffect.StartDownloadApp -> {
+                    val appKey = it.appKey
+                    val downloadId = appDownloader.download(it.url, "${appKey}.apk")
+                    downloadId.loge()
+                    coroutineScope.launch {
+                        var isDownloading = true
+                        while (isDownloading) {
+                            val (progress, status) = appDownloader.queryProgress(downloadId)
+                            dispatch(HomeUiAction.UpdateAppDownloadProgress(appKey, progress))
+
+                            when (status) {
+                                DownloadManager.STATUS_SUCCESSFUL -> {
+                                    val downloadUri = appDownloader.getDownloadedUri(downloadId)
+                                    dispatch(HomeUiAction.AppDownloadCompleted(appKey, downloadUri))
+                                    appDownloader.installApk(context, downloadUri) // 自动安装
+                                    isDownloading = false
+                                }
+
+                                DownloadManager.STATUS_FAILED -> {
+                                    dispatch(HomeUiAction.AppDownloadFailed(appKey))
+                                    isDownloading = false
+                                }
+
+                                -1 -> {
+                                    dispatch(HomeUiAction.AppDownloadFailed(appKey))
+                                    isDownloading = false
+                                }
+
+                                else -> {
+                                    delay(500)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 新增：安装应用
+                is HomeUiEffect.InstallApp -> {
+                    appDownloader.installApk(context, it.downloadUri)
+                }
+
+                // 新增：清除已下载的 APK
+                is HomeUiEffect.ClearDownloadedApks -> {
+                    val count = appDownloader.clearAllDownloadedApks()
+                    "已清除 $count 个已下载的安装包".loge()
+                }
             }
         }
     }
@@ -277,7 +336,10 @@ private fun AppTopCard(
     versionName: String = "v3.7.1",
     createdTime: String = "3小时前",
     iconUrl: String = "",
+    downloadState: DownloadState = DownloadState.IDLE,
+    downloadProgress: Int = 0,
     onDownloadClick: () -> Unit = {},
+    onInstallClick: () -> Unit = {},
     onItemClick: () -> Unit = {}
 ) {
     val imgUrl =
@@ -311,16 +373,11 @@ private fun AppTopCard(
         Text("v${versionName}", color = gray999, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(6.dp))
         Text(createdTime, color = gray999, fontSize = 14.sp)
-        Text(
-            "下载",
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier
-                .padding(top = 8.dp)
-                .background(theme, RoundedCornerShape(30.dp))
-                .click(onDownloadClick)
-                .padding(horizontal = 18.dp, vertical = 4.dp),
-            color = Color.White,
-            fontSize = 14.sp
+        DownLoadButton(
+            state = downloadState,
+            progress = downloadProgress,
+            onDownloadClick = onDownloadClick,
+            onInstallClick = onInstallClick
         )
     }
 }
@@ -377,7 +434,6 @@ private fun Item(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(description, color = Color(0xFF5A5858), fontSize = 14.sp)
-//                Text("${buildFileSize / 1024 / 1024}M", color = Color(0xFF5A5858), fontSize = 14.sp)
             }
 
 

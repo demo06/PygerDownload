@@ -6,6 +6,7 @@ import funny.buildapp.pygerdownload.R
 import funny.buildapp.pygerdownload.model.AppInfo
 import funny.buildapp.pygerdownload.model.MiniInfo
 import funny.buildapp.pygerdownload.net.ApiService
+import funny.buildapp.pygerdownload.ui.component.DownloadState
 import funny.buildapp.pygerdownload.util.BaseMviViewModel
 import funny.buildapp.pygerdownload.util.Constants
 
@@ -35,6 +36,16 @@ class HomeViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(
                 setState { copy(isDownloading = true) }
                 downloadApp(Constants.PGYER_KEY, "")
             }
+            // 新增：开始下载应用
+            is HomeUiAction.StartAppDownload -> startAppDownload(action.appKey, action.password)
+            // 新增：更新应用下载进度
+            is HomeUiAction.UpdateAppDownloadProgress -> updateAppDownloadProgress(action.appKey, action.progress)
+            // 新增：应用下载完成
+            is HomeUiAction.AppDownloadCompleted -> appDownloadCompleted(action.appKey, action.downloadUri)
+            // 新增：应用下载失败
+            is HomeUiAction.AppDownloadFailed -> appDownloadFailed(action.appKey)
+            // 新增：安装应用
+            is HomeUiAction.InstallApp -> installApp(action.appKey)
         }
     }
 
@@ -49,7 +60,10 @@ class HomeViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(
     }
 
     private fun getAppGroup() {
-        setState { copy(isRefreshing = true) }
+        // 清除下载记录
+        setState { copy(isRefreshing = true, appDownloadStates = emptyMap()) }
+        // 发送清除已下载APK的 Effect
+        sendEffect { HomeUiEffect.ClearDownloadedApks }
         request(
             api = { ApiService.instance().appGroup(Constants.API_KEY, Constants.GROUP_KEY) },
             onFailed = { setState { copy(isRefreshing = false) } },
@@ -156,5 +170,83 @@ class HomeViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(
         setState { copy(hasUpdate = !hasUpdate) }
     }
 
+    /**
+     * 开始下载应用
+     */
+    private fun startAppDownload(appKey: String, password: String) {
+        // 设置下载中状态
+        setState {
+            val newStates = appDownloadStates.toMutableMap()
+            newStates[appKey] = AppDownloadInfo(
+                appKey = appKey,
+                state = DownloadState.DOWNLOADING,
+                progress = 0
+            )
+            copy(appDownloadStates = newStates)
+        }
+        // 发送下载 Effect
+        val url = downloadUrl(appKey, password)
+        sendEffect { HomeUiEffect.StartDownloadApp(appKey, password, url) }
+    }
+
+    /**
+     * 更新应用下载进度
+     */
+    private fun updateAppDownloadProgress(appKey: String, progress: Int) {
+        setState {
+            val newStates = appDownloadStates.toMutableMap()
+            val currentInfo = newStates[appKey] ?: AppDownloadInfo(appKey = appKey)
+            newStates[appKey] = currentInfo.copy(
+                state = DownloadState.DOWNLOADING,
+                progress = progress
+            )
+            copy(appDownloadStates = newStates)
+        }
+    }
+
+    /**
+     * 应用下载完成
+     */
+    private fun appDownloadCompleted(appKey: String, downloadUri: android.net.Uri?) {
+        setState {
+            val newStates = appDownloadStates.toMutableMap()
+            newStates[appKey] = AppDownloadInfo(
+                appKey = appKey,
+                state = DownloadState.COMPLETED,
+                progress = 100,
+                downloadUri = downloadUri
+            )
+            copy(appDownloadStates = newStates)
+        }
+    }
+
+    /**
+     * 应用下载失败
+     */
+    private fun appDownloadFailed(appKey: String) {
+        setState {
+            val newStates = appDownloadStates.toMutableMap()
+            newStates[appKey] = AppDownloadInfo(
+                appKey = appKey,
+                state = DownloadState.IDLE,
+                progress = 0
+            )
+            copy(appDownloadStates = newStates)
+        }
+        sendEffect { HomeUiEffect.ShowToast("下载失败") }
+    }
+
+    /**
+     * 安装应用
+     */
+    private fun installApp(appKey: String) {
+        val downloadInfo = _uiState.value.appDownloadStates[appKey]
+        val downloadUri = downloadInfo?.downloadUri
+        if (downloadUri != null) {
+            sendEffect { HomeUiEffect.InstallApp(downloadUri) }
+        } else {
+            sendEffect { HomeUiEffect.ShowToast("安装文件不存在") }
+        }
+    }
 
 }

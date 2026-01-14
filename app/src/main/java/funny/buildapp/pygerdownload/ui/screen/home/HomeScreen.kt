@@ -1,6 +1,5 @@
 package funny.buildapp.pygerdownload.ui.screen.home
 
-import android.R.attr.description
 import android.app.DownloadManager
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
@@ -36,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -110,7 +108,7 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                             iconUrl = item.buildIcon ?: "",
                             onDownloadClick = {},
                             onItemClick = {
-                                dispatch(HomeUiAction.GoDetail)
+                                dispatch(HomeUiAction.GoDetail(item))
                             })
                     })
                 }
@@ -161,7 +159,7 @@ private fun UIEffect(
                 }
 
                 is HomeUiEffect.GoDetail -> {
-                    navigator.push(AppRoute.Detail(1))
+                    navigator.push(AppRoute.Detail(it.item))
                 }
 
                 is HomeUiEffect.DownLoadApp -> {

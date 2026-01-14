@@ -1,5 +1,7 @@
 package funny.buildapp.pygerdownload.ui.screen.detail
 
+import android.R.attr.versionCode
+import android.R.attr.versionName
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,6 +35,7 @@ import coil3.compose.AsyncImage
 import funny.buildapp.clauncher.util.click
 import funny.buildapp.clauncher.util.toast
 import funny.buildapp.pygerdownload.R
+import funny.buildapp.pygerdownload.model.AppInfo
 import funny.buildapp.pygerdownload.route.LocalNavigator
 import funny.buildapp.pygerdownload.ui.component.Screen
 import funny.buildapp.pygerdownload.ui.component.TitleBar
@@ -46,10 +49,10 @@ import funny.buildapp.pygerdownload.ui.theme.whiteF4F5FA
 
 @Preview
 @Composable
-fun DetailScreen(viewModel: DetailViewModel = viewModel()) {
+fun DetailScreen(item: AppInfo = AppInfo(), viewModel: DetailViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val dispatch = viewModel::dispatch
-    UiEffect(viewModel)
+    UiEffect(viewModel, item)
     Screen(
         modifier = Modifier.background(whiteF4F5FA),
         titleBar = {
@@ -62,12 +65,12 @@ fun DetailScreen(viewModel: DetailViewModel = viewModel()) {
             dispatch = dispatch,
             appInfo = {
                 AppInfoCard(
-                    appName = uiState.appName ?: "抢钢宝",
-                    versionName = uiState.versionName ?: "v1.1.1",
-                    versionCode = uiState.versionCode ?: "20",
-                    buildFileSize = uiState.buildFileSize ?: 1023213123,
-                    buildCreated = uiState.buildCreated ?: "3分钟前",
-                    iconUrl = uiState.iconUrl ?: "",
+                    appName = uiState.appInfo.buildName ?: "",
+                    versionName = uiState.appInfo.buildVersion ?: "v1.0.0",
+                    versionCode = uiState.appInfo.buildBuildVersion ?: "1",
+                    buildFileSize = uiState.appInfo.buildFileSize?.toInt() ?: 1023213123,
+                    buildCreated = uiState.appInfo.getTime(),
+                    iconUrl = uiState.appInfo.buildIcon ?: "112312",
                     onDownloadClick = { dispatch(DetailUiAction.Download) }
                 )
             },
@@ -82,13 +85,13 @@ fun DetailScreen(viewModel: DetailViewModel = viewModel()) {
 }
 
 @Composable
-private fun UiEffect(viewModel: DetailViewModel) {
+private fun UiEffect(viewModel: DetailViewModel, item: AppInfo) {
     val context = LocalContext.current
     val navigator = LocalNavigator.current
     val dispatch = viewModel::dispatch
 
     LaunchedEffect(Unit) {
-        dispatch(DetailUiAction.FetchData)
+        dispatch(DetailUiAction.FetchData(item))
     }
 
     LaunchedEffect(viewModel) {
@@ -130,9 +133,14 @@ private fun AppInfoCard(
     versionCode: String = "20",
     buildFileSize: Int = 1023213123,
     buildCreated: String = "3分钟前",
-    iconUrl: String = "",
+    iconUrl: String = "12312",
     onDownloadClick: () -> Unit = {}
 ) {
+    val imgUrl = if (iconUrl.isEmpty()) {
+        "https://cdn-app-icon2.pgyer.com/8/3/b/4/4/83b445401ad8ba82180b599f71fc8109?x-oss-process=image/resize,m_lfit,h_120,w_120/format,jpg"
+    } else {
+        "https://cdn-app-icon2.pgyer.com/${iconUrl[0]}/${iconUrl[1]}/${iconUrl[2]}/${iconUrl[3]}/${iconUrl[4]}/$iconUrl?x-oss-process=image/resize,m_lfit,h_120,w_120/format,jpg"
+    }
     Column(
         modifier = Modifier
             .padding(top = 8.dp, start = 8.dp, end = 8.dp)
@@ -149,7 +157,7 @@ private fun AppInfoCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AsyncImage(
-                    model = iconUrl,
+                    model = imgUrl,
                     contentDescription = "icon",
                     placeholder = painterResource(R.mipmap.qgb),
                     error = painterResource(R.mipmap.qgb),

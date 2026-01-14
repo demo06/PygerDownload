@@ -27,7 +27,7 @@ class HomeViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(
         when (action) {
             is HomeUiAction.FetchData -> fetchData()
             is HomeUiAction.ShowUpdate -> changeDownLoadDialogState()
-            is HomeUiAction.GoDetail -> sendEffect { HomeUiEffect.GoDetail }
+            is HomeUiAction.GoDetail -> sendEffect { HomeUiEffect.GoDetail(action.item) }
             is HomeUiAction.Download -> downloadApp(action.appKey, action.password)
             is HomeUiAction.GoMINIDetail -> sendEffect { HomeUiEffect.GoMINIDetail(action.item) }
             is HomeUiAction.UpdateDownloadProgress -> setState { copy(updateProcess = action.progress) }

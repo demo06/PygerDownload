@@ -23,7 +23,7 @@ fun AppNavHost() {
         ) { key ->
             when (key) {
                 is AppRoute.AppHome -> NavEntry(key) { HomeScreen() }
-                is AppRoute.Detail -> NavEntry(key) { DetailScreen() }
+                is AppRoute.Detail -> NavEntry(key) { DetailScreen(key.item) }
                 is AppRoute.MiniDetail -> NavEntry(key) { MiniDetailScreen(key.item) }
                 else -> NavEntry(Unit) { HomeScreen() }
             }

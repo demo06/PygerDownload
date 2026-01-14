@@ -16,7 +16,7 @@ data class HomeUiState(
 
 sealed class HomeUiAction {
     object ShowUpdate : HomeUiAction()
-    object GoDetail : HomeUiAction()
+    data class GoDetail(val item: AppInfo) : HomeUiAction()
     data class GoMINIDetail(val item: MiniInfo) : HomeUiAction()
     object Update : HomeUiAction()
     object FetchData : HomeUiAction()
@@ -28,7 +28,7 @@ sealed class HomeUiAction {
 
 interface HomeUiEffect {
     data class ShowToast(val msg: String) : HomeUiEffect
-    data object GoDetail : HomeUiEffect
+    data class GoDetail(val item: AppInfo) : HomeUiEffect
     data class GoMINIDetail(val item: MiniInfo) : HomeUiEffect
     data class DownLoadApp(val url: String) : HomeUiEffect
 }

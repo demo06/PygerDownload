@@ -1,5 +1,6 @@
 package funny.buildapp.pygerdownload.ui.screen.home
 
+import android.R.attr.description
 import android.app.DownloadManager
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
@@ -409,9 +410,8 @@ private fun Item(
         )
         Column(
             Modifier
-                .padding(end = 16.dp)
-                .weight(1f)
-                .padding(start = 8.dp),
+                .padding(end = 8.dp, start = 4.dp)
+                .weight(1f),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.Start
         ) {
@@ -424,6 +424,7 @@ private fun Item(
                     appName,
                     color = black333,
                     fontSize = 16.sp,
+                    maxLines = 1
                 )
                 Spacer(Modifier.width(8.dp))
                 Tag("小程序", green07C160)
@@ -477,4 +478,16 @@ fun Tag(text: String = "APP", background: Color = theme) {
             )
         )
     }
+}
+
+
+@Preview
+@Composable
+fun ItemPreview() {
+    Item(
+        appName = "采购通-10分钟报价",
+        iconUrl = R.mipmap.icon_cgt,
+        description = "钢材采购全网最快！",
+        onItemClick = { },
+    )
 }

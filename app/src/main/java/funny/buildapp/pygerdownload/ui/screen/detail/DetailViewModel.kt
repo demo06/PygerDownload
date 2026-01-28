@@ -29,14 +29,14 @@ class DetailViewModel : BaseMviViewModel<DetailUiState, DetailUiAction, DetailUi
             // ... (keep existing actions)
             is DetailUiAction.StartDownload -> startDownload(action.appKey, action.password)
             is DetailUiAction.UpdateDownloadProgress -> updateDownloadProgress(action.progress)
-            is DetailUiAction.DownloadCompleted -> downloadCompleted(action.downloadUri)
+            is DetailUiAction.DownloadCompleted -> downloadCompleted(action.downloadId)
             is DetailUiAction.DownloadFailed -> downloadFailed()
             is DetailUiAction.Install -> install()
 
             // 新增：版本历史下载状态控制
             is DetailUiAction.StartVersionDownload -> startVersionDownload(action.index, action.appKey, action.password)
             is DetailUiAction.UpdateVersionDownloadProgress -> updateVersionDownloadProgress(action.index, action.progress)
-            is DetailUiAction.VersionDownloadCompleted -> versionDownloadCompleted(action.index, action.downloadUri)
+            is DetailUiAction.VersionDownloadCompleted -> versionDownloadCompleted(action.index, action.downloadId)
             is DetailUiAction.VersionDownloadFailed -> versionDownloadFailed(action.index)
             is DetailUiAction.InstallVersion -> installVersion(action.index)
         }
@@ -47,8 +47,21 @@ class DetailViewModel : BaseMviViewModel<DetailUiState, DetailUiAction, DetailUi
     }
 
     private fun fetchData(item: AppInfo) {
-        // 重置为第一页
-        setState { copy(appInfo = item, page = 1, hasMore = true, versionHistory = null) }
+        // 重置为第一页，并且清除所有下载状态，防止不同 App 间状态污染
+        setState {
+            copy(
+                appInfo = item,
+                page = 1,
+                hasMore = true,
+                versionHistory = null,
+                downloadState = DownloadState.IDLE,
+                downloadProgress = 0,
+                downloadId = -1,
+                versionDownloadStates = emptyMap(),
+                versionDownloadProgress = emptyMap(),
+                versionDownloadIds = emptyMap()
+            )
+        }
         getAppVersionHistory(1)
     }
 
@@ -122,12 +135,12 @@ class DetailViewModel : BaseMviViewModel<DetailUiState, DetailUiAction, DetailUi
     /**
      * 下载完成
      */
-    private fun downloadCompleted(downloadUri: Uri?) {
+    private fun downloadCompleted(downloadId: Long) {
         setState {
             copy(
                 downloadState = DownloadState.COMPLETED,
                 downloadProgress = 100,
-                downloadUri = downloadUri
+                downloadId = downloadId
             )
         }
     }
@@ -149,9 +162,9 @@ class DetailViewModel : BaseMviViewModel<DetailUiState, DetailUiAction, DetailUi
      * 安装应用
      */
     private fun install() {
-        val uri = _uiState.value.downloadUri
-        if (uri != null) {
-            sendEffect { DetailUiEffect.Install(uri) }
+        val downloadId = _uiState.value.downloadId
+        if (downloadId != -1L) {
+            sendEffect { DetailUiEffect.Install(downloadId) }
         } else {
             sendEffect { DetailUiEffect.ShowToast("安装文件不存在") }
         }
@@ -186,18 +199,18 @@ class DetailViewModel : BaseMviViewModel<DetailUiState, DetailUiAction, DetailUi
     /**
      * 版本下载完成
      */
-    private fun versionDownloadCompleted(index: Int, downloadUri: Uri?) {
+    private fun versionDownloadCompleted(index: Int, downloadId: Long) {
         setState {
             val newStates = versionDownloadStates.toMutableMap()
             val newProgress = versionDownloadProgress.toMutableMap()
-            val newUris = versionDownloadUris.toMutableMap()
+            val newIds = versionDownloadIds.toMutableMap()
             newStates[index] = DownloadState.COMPLETED
             newProgress[index] = 100
-            newUris[index] = downloadUri
+            newIds[index] = downloadId
             copy(
                 versionDownloadStates = newStates,
                 versionDownloadProgress = newProgress,
-                versionDownloadUris = newUris
+                versionDownloadIds = newIds
             )
         }
     }
@@ -220,9 +233,9 @@ class DetailViewModel : BaseMviViewModel<DetailUiState, DetailUiAction, DetailUi
      * 安装版本
      */
     private fun installVersion(index: Int) {
-        val uri = _uiState.value.versionDownloadUris[index]
-        if (uri != null) {
-            sendEffect { DetailUiEffect.Install(uri) }
+        val downloadId = _uiState.value.versionDownloadIds[index]
+        if (downloadId != null && downloadId != -1L) {
+            sendEffect { DetailUiEffect.Install(downloadId) }
         } else {
             sendEffect { DetailUiEffect.ShowToast("安装文件不存在") }
         }

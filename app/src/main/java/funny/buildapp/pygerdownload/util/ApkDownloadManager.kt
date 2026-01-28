@@ -70,27 +70,47 @@ class ApkDownloadManager(private val context: Context) {
 
 
     fun installApk(context: Context, downloadId: Long) {
-        val query = DownloadManager.Query().setFilterById(downloadId)
-        val cursor = downloadManager.query(query)
         var apkFile: File? = null
-        cursor.use {
-            if (it != null && it.moveToFirst()) { // 检查 Cursor 是否为空且能移动到第一行
-                val uriIndex = it.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI) // 使用 getColumnIndex 避免异常
-                if (uriIndex != -1) {
-                    val uriString = it.getString(uriIndex)
-                    if (uriString != null) {
-                        val uri = Uri.parse(uriString)
-                        if (uri.scheme == "file") {
-                            apkFile = File(uri.path!!)
-                        }
-                    }
-                }
+        try {
+            // 尝试将 DownloadManager 的文件复制到私有目录，以解决兼容性问题
+            val pfd = downloadManager.openDownloadedFile(downloadId)
+            val inputStream = java.io.FileInputStream(pfd.fileDescriptor)
+            val cacheDir = context.externalCacheDir ?: context.cacheDir
+            
+            // 使用 downloadId 作为文件名的一部分，防止冲突
+            val tempFile = File(cacheDir, "installer_$downloadId.apk")
+            
+            if (tempFile.exists()) {
+                tempFile.delete()
             }
+            
+            // 确保目录存在
+            tempFile.parentFile?.mkdirs()
+            
+            val outputStream = java.io.FileOutputStream(tempFile)
+            inputStream.copyTo(outputStream)
+            
+            inputStream.close()
+            outputStream.close()
+            pfd.close()
+            
+            // 设置文件为所有者可读写，其他人可读
+            tempFile.setReadable(true, false)
+            
+            apkFile = tempFile
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // 复制失败，apkFile 保持为 null
         }
 
         if (apkFile != null && apkFile!!.exists()) {
             if (isApkValid(context, apkFile!!)) {
-                launchInstallIntent(context, apkFile!!)
+                try {
+                    launchInstallIntent(context, apkFile!!)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    "启动安装失败".toast(context)
+                }
             } else {
                 "安装包已损坏,请重新下载".toast(context)
                 try {
@@ -100,7 +120,7 @@ class ApkDownloadManager(private val context: Context) {
                 }
             }
         } else {
-            // Fallback: 如果无法获取文件路径，尝试使用 DownloadManager 提供的 Uri
+            // Fallback: 如果复制失败或无法获取文件，尝试直接使用 DownloadManager 提供的 Uri
             val uri = downloadManager.getUriForDownloadedFile(downloadId)
             installApk(context, uri)
         }
@@ -118,6 +138,7 @@ class ApkDownloadManager(private val context: Context) {
                 val file = File(apkUri.path!!)
                 if (isApkValid(context, file)) {
                     launchInstallIntent(context, file)
+                    return
                 } else {
                     "安装包已损坏,请重新下载".toast(context)
                     try {
@@ -125,8 +146,9 @@ class ApkDownloadManager(private val context: Context) {
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
+                    // 文件已损坏，不再进一步尝试
+                    return
                 }
-                return
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -171,6 +193,7 @@ class ApkDownloadManager(private val context: Context) {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
+
         context.startActivity(intent)
     }
 

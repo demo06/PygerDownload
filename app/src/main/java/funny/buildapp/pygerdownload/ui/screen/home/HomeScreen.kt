@@ -193,6 +193,7 @@ private fun UIEffect(
                                     // 下载完成
                                     dispatch(HomeUiAction.ShowUpdate)
                                     dispatch(HomeUiAction.UpdateDownloadProgress(100))
+                                    delay(2000)
                                     appDownloader.installApk(context, downloadId)
                                     isDownloading = false
                                 }
@@ -231,6 +232,7 @@ private fun UIEffect(
                             when (status) {
                                 DownloadManager.STATUS_SUCCESSFUL -> {
                                     dispatch(HomeUiAction.AppDownloadCompleted(appKey, downloadId))
+                                    delay(2000)
                                     appDownloader.installApk(context, downloadId) // 自动安装
                                     isDownloading = false
                                 }

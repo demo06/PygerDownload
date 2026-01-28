@@ -150,9 +150,9 @@ private fun UiEffect(viewModel: DetailViewModel, item: AppInfo, dispatch: (Detai
 
                             when (status) {
                                 DownloadManager.STATUS_SUCCESSFUL -> {
-                                    val downloadUri = appDownloader.getDownloadedUri(downloadId)
-                                    dispatch(DetailUiAction.DownloadCompleted(downloadUri))
-                                    appDownloader.installApk(context, downloadUri) // 自动安装
+                                    dispatch(DetailUiAction.DownloadCompleted(downloadId))
+                                    delay(2000)
+                                    appDownloader.installApk(context, downloadId) // 自动安装
                                     isDownloading = false
                                 }
 
@@ -170,7 +170,7 @@ private fun UiEffect(viewModel: DetailViewModel, item: AppInfo, dispatch: (Detai
                 }
 
                 is DetailUiEffect.Install -> {
-                    appDownloader.installApk(context, it.downloadUri)
+                    appDownloader.installApk(context, it.downloadId)
                 }
 
                 is DetailUiEffect.StartVersionDownload -> {
@@ -184,9 +184,9 @@ private fun UiEffect(viewModel: DetailViewModel, item: AppInfo, dispatch: (Detai
 
                             when (status) {
                                 DownloadManager.STATUS_SUCCESSFUL -> {
-                                    val downloadUri = appDownloader.getDownloadedUri(downloadId)
-                                    dispatch(DetailUiAction.VersionDownloadCompleted(index, downloadUri))
-                                    appDownloader.installApk(context, downloadUri) // 自动安装
+                                    dispatch(DetailUiAction.VersionDownloadCompleted(index, downloadId))
+                                    delay(2000)
+                                    appDownloader.installApk(context, downloadId) // 自动安装
                                     isDownloading = false
                                 }
 

@@ -71,7 +71,6 @@ import funny.buildapp.pygerdownload.util.ApkDownloadManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@Preview
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
@@ -194,8 +193,7 @@ private fun UIEffect(
                                     // 下载完成
                                     dispatch(HomeUiAction.ShowUpdate)
                                     dispatch(HomeUiAction.UpdateDownloadProgress(100))
-                                    val downloadUrl = appDownloader.getDownloadedUri(downloadId)
-                                    appDownloader.installApk(context, downloadUrl)
+                                    appDownloader.installApk(context, downloadId)
                                     isDownloading = false
                                 }
 
@@ -232,9 +230,8 @@ private fun UIEffect(
 
                             when (status) {
                                 DownloadManager.STATUS_SUCCESSFUL -> {
-                                    val downloadUri = appDownloader.getDownloadedUri(downloadId)
-                                    dispatch(HomeUiAction.AppDownloadCompleted(appKey, downloadUri))
-                                    appDownloader.installApk(context, downloadUri) // 自动安装
+                                    dispatch(HomeUiAction.AppDownloadCompleted(appKey, downloadId))
+                                    appDownloader.installApk(context, downloadId) // 自动安装
                                     isDownloading = false
                                 }
 
@@ -258,7 +255,7 @@ private fun UIEffect(
 
                 // 新增：安装应用
                 is HomeUiEffect.InstallApp -> {
-                    appDownloader.installApk(context, it.downloadUri)
+                    appDownloader.installApk(context, it.downloadId)
                 }
 
                 // 新增：清除已下载的 APK
@@ -302,7 +299,13 @@ private fun Content(
             state = listSate
         ) {
             item {
+                TitleLabel("APP")
+            }
+            item {
                 header()
+            }
+            item {
+                TitleLabel("小程序")
             }
             items(miniList) {
                 item(it)
@@ -316,6 +319,7 @@ private fun Content(
 @Composable
 private fun Header(topAppCard: @Composable RowScope.(Int) -> Unit = {}) {
     val displayOrder = listOf(1, 0, 2)
+
     Row(
         Modifier
             .fillMaxWidth()
@@ -427,7 +431,7 @@ private fun Item(
                     maxLines = 1
                 )
                 Spacer(Modifier.width(8.dp))
-                Tag("小程序", green07C160)
+//                Tag("小程序", green07C160)
             }
             Spacer(Modifier.height(8.dp))
             Row(
@@ -480,8 +484,31 @@ fun Tag(text: String = "APP", background: Color = theme) {
     }
 }
 
-
 @Preview
+@Composable
+fun TitleLabel(title: String = "小程序") {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .background(theme)
+                .height(20.dp)
+                .width(4.dp)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            title,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        )
+    }
+}
+
+
+//@AllTestDevices
 @Composable
 fun ItemPreview() {
     Item(

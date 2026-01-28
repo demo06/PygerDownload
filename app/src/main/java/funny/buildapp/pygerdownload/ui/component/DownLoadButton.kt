@@ -48,17 +48,23 @@ fun DownLoadButton(
     when (state) {
         DownloadState.IDLE -> {
             // 默认状态：背景为 theme 色，显示"下载"
-            Text(
-                "下载",
-                fontWeight = FontWeight.Medium,
+            Box(
                 modifier = Modifier
                     .padding(top = 8.dp)
-                    .background(theme, RoundedCornerShape(cornerRadius))
-                    .click(onDownloadClick)
-                    .padding(horizontal = 18.dp, vertical = 4.dp),
-                color = Color.White,
-                fontSize = 14.sp
-            )
+                    .width(buttonWidth)
+                    .height(buttonHeight)
+                    .clip(RoundedCornerShape(cornerRadius))
+                    .background(theme)
+                    .click(onDownloadClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "下载",
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White,
+                    fontSize = 14.sp
+                )
+            }
         }
 
         DownloadState.DOWNLOADING -> {
@@ -92,17 +98,23 @@ fun DownLoadButton(
 
         DownloadState.COMPLETED -> {
             // 下载完成状态：背景为 theme 色，显示"安装"
-            Text(
-                "安装",
-                fontWeight = FontWeight.Medium,
+            Box(
                 modifier = Modifier
                     .padding(top = 8.dp)
-                    .background(theme, RoundedCornerShape(cornerRadius))
-                    .click(onInstallClick)
-                    .padding(horizontal = 18.dp, vertical = 4.dp),
-                color = Color.White,
-                fontSize = 14.sp
-            )
+                    .width(buttonWidth)
+                    .height(buttonHeight)
+                    .clip(RoundedCornerShape(cornerRadius))
+                    .background(theme)
+                    .click(onInstallClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "安装",
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White,
+                    fontSize = 14.sp
+                )
+            }
         }
     }
 }

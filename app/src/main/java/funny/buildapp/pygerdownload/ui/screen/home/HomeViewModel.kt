@@ -41,7 +41,7 @@ class HomeViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(
             // 新增：更新应用下载进度
             is HomeUiAction.UpdateAppDownloadProgress -> updateAppDownloadProgress(action.appKey, action.progress)
             // 新增：应用下载完成
-            is HomeUiAction.AppDownloadCompleted -> appDownloadCompleted(action.appKey, action.downloadUri)
+            is HomeUiAction.AppDownloadCompleted -> appDownloadCompleted(action.appKey, action.downloadId)
             // 新增：应用下载失败
             is HomeUiAction.AppDownloadFailed -> appDownloadFailed(action.appKey)
             // 新增：安装应用
@@ -207,14 +207,14 @@ class HomeViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(
     /**
      * 应用下载完成
      */
-    private fun appDownloadCompleted(appKey: String, downloadUri: android.net.Uri?) {
+    private fun appDownloadCompleted(appKey: String, downloadId: Long) {
         setState {
             val newStates = appDownloadStates.toMutableMap()
             newStates[appKey] = AppDownloadInfo(
                 appKey = appKey,
                 state = DownloadState.COMPLETED,
                 progress = 100,
-                downloadUri = downloadUri
+                downloadId = downloadId
             )
             copy(appDownloadStates = newStates)
         }
@@ -241,9 +241,9 @@ class HomeViewModel : BaseMviViewModel<HomeUiState, HomeUiAction, HomeUiEffect>(
      */
     private fun installApp(appKey: String) {
         val downloadInfo = _uiState.value.appDownloadStates[appKey]
-        val downloadUri = downloadInfo?.downloadUri
-        if (downloadUri != null) {
-            sendEffect { HomeUiEffect.InstallApp(downloadUri) }
+        val downloadId = downloadInfo?.downloadId
+        if (downloadId != null && downloadId != -1L) {
+            sendEffect { HomeUiEffect.InstallApp(downloadId) }
         } else {
             sendEffect { HomeUiEffect.ShowToast("安装文件不存在") }
         }

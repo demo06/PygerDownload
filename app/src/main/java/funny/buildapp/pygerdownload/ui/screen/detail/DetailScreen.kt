@@ -100,11 +100,13 @@ fun DetailScreen(item: AppInfo = AppInfo(), viewModel: DetailViewModel = viewMod
                     onDownloadClick = { index ->
                         val version = uiState.versionHistory?.list?.getOrNull(index)
                         if (version != null) {
-                            dispatch(DetailUiAction.StartVersionDownload(
-                                index,
-                                version.buildKey ?: "",
-                                "" // Version doesn't have buildPassword
-                            ))
+                            dispatch(
+                                DetailUiAction.StartVersionDownload(
+                                    index,
+                                    version.buildKey ?: "",
+                                    "" // Version doesn't have buildPassword
+                                )
+                            )
                         }
                     },
                     onInstallClick = { index ->
@@ -375,6 +377,7 @@ private fun VersionHistoryCard(
     }
 }
 
+@Preview
 @Composable
 private fun VersionItem(
     versionName: String = "v1.1.0",
@@ -392,7 +395,7 @@ private fun VersionItem(
         modifier = Modifier
             .fillMaxWidth()
             .background(if (isLatest) Color(0xFFF0F9FF) else Color.Transparent, RoundedCornerShape(8.dp))
-            .padding(12.dp),
+            .padding(start = 12.dp, top = 12.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {

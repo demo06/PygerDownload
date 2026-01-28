@@ -12,7 +12,7 @@ data class AppDownloadInfo(
     val appKey: String,
     val state: DownloadState = DownloadState.IDLE,
     val progress: Int = 0,
-    val downloadUri: Uri? = null
+    val downloadId: Long = -1
 )
 
 data class HomeUiState(
@@ -40,7 +40,7 @@ sealed class HomeUiAction {
     // 新增：应用下载相关 Action
     data class StartAppDownload(val appKey: String, val password: String) : HomeUiAction()
     data class UpdateAppDownloadProgress(val appKey: String, val progress: Int) : HomeUiAction()
-    data class AppDownloadCompleted(val appKey: String, val downloadUri: Uri?) : HomeUiAction()
+    data class AppDownloadCompleted(val appKey: String, val downloadId: Long) : HomeUiAction()
     data class AppDownloadFailed(val appKey: String) : HomeUiAction()
     data class InstallApp(val appKey: String) : HomeUiAction()
 }
@@ -54,7 +54,7 @@ interface HomeUiEffect {
     // 新增：开始下载单个应用
     data class StartDownloadApp(val appKey: String, val password: String, val url: String) : HomeUiEffect
     // 新增：安装应用
-    data class InstallApp(val downloadUri: Uri) : HomeUiEffect
+    data class InstallApp(val downloadId: Long) : HomeUiEffect
     // 新增：清除已下载的 APK
     data object ClearDownloadedApks : HomeUiEffect
 }

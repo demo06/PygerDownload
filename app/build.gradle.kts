@@ -6,6 +6,19 @@ plugins {
     id("pgyer-upload")
 }
 
+
+configure<funny.buildapp.plugin.PgyerConfig> {
+    updateDescription = """
+        更新内容：
+        1、优化应用主页样式
+        2、优化下载安装流程
+        3、优化详情页面展示效果
+        4、增加部分标识
+        ===
+        isForceUpdate=true
+    """.trimIndent()
+}
+
 android {
     namespace = "funny.buildapp.pygerdownload"
     compileSdk = 36
@@ -91,14 +104,3 @@ dependencies {
     implementation(libs.wechat.sdk)
 }
 
-configure<funny.buildapp.plugin.PgyerConfig> {
-    updateDescription = """
-        更新内容：
-        1、增加小程序快捷打开功能
-        2、增加应用更新检测
-        3、增加应用详情页面
-        4、增加历史版本下载
-        ===
-        isForceUpdate=false
-    """.trimIndent()
-}

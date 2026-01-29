@@ -10,7 +10,7 @@ object Constants {
     /**
      * 微信小程序appid
      */
-    const val WECHAT_APP_ID = "wxd930ea5d5a258f4f"
+    const val WECHAT_APP_ID = "wxc643bc7417b816fd"
 
     /**
      * 钢小秘

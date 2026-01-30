@@ -1,6 +1,6 @@
 [versions]
-versionName = "v2.0.8"
-versionCode = "9"
+versionName = "v2.0.9"
+versionCode = "11"
 agp = "8.9.1"
 kotlin = "2.0.21"
 coreKtx = "1.13.1"

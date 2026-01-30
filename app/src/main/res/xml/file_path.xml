@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
+    <!-- 外部存储路径 (Environment.getExternalStorageDirectory()) -->
     <external-path name="external" path="." />
+    <!-- 外部缓存目录 (context.externalCacheDir) -->
+    <external-cache-path name="external_cache" path="." />
+    <!-- 内部缓存目录 (context.cacheDir) -->
+    <cache-path name="cache" path="." />
 </paths>

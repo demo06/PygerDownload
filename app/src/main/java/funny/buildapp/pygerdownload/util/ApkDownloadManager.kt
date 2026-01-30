@@ -4,198 +4,147 @@ import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import funny.buildapp.clauncher.util.toast
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 
+/**
+ * APK 下载管理器
+ * 封装了下载、进度查询、安装等功能
+ */
 class ApkDownloadManager(private val context: Context) {
 
-    private val downloadManager =
+    companion object {
+        private const val APK_MIME_TYPE = "application/vnd.android.package-archive"
+        private const val FILE_PROVIDER_SUFFIX = ".fileprovider"
+    }
+
+    private val downloadManager: DownloadManager =
         context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
-    fun download(
-        url: String,
-        fileName: String
-    ): Long {
-        val request = DownloadManager.Request(url.toUri())
-            .setTitle(fileName)
-            .setDescription("正在下载")
-            .setNotificationVisibility(
-                DownloadManager.Request.VISIBILITY_VISIBLE
-            )
-            .setAllowedOverMetered(true)
-            .setAllowedOverRoaming(true)
-            .setDestinationInExternalPublicDir(
-                Environment.DIRECTORY_DOWNLOADS,
-                fileName
-            )
+    // ==================== 下载相关 ====================
 
+    /**
+     * 开始下载 APK 文件
+     * @param url 下载地址
+     * @param fileName 保存的文件名
+     * @return 下载任务 ID
+     */
+    fun download(url: String, fileName: String): Long {
+        val request = DownloadManager.Request(url.toUri()).apply {
+            setTitle(fileName)
+            setDescription("正在下载")
+            setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
+            setAllowedOverMetered(true)
+            setAllowedOverRoaming(true)
+            setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+        }
         return downloadManager.enqueue(request)
     }
 
     /**
      * 查询下载进度
-     * @return Pair<Int, Int> 第一个值是进度(0-100)，第二个值是下载状态
-     * 状态值: DownloadManager.STATUS_PENDING, STATUS_RUNNING, STATUS_PAUSED, STATUS_SUCCESSFUL, STATUS_FAILED
-     * 如果查询失败返回 Pair(0, -1)
+     * @param downloadId 下载任务 ID
+     * @return Pair<进度(0-100), 状态>
+     *         状态值: STATUS_PENDING, STATUS_RUNNING, STATUS_PAUSED, STATUS_SUCCESSFUL, STATUS_FAILED
+     *         查询失败返回 Pair(0, -1)
      */
     fun queryProgress(downloadId: Long): Pair<Int, Int> {
         val query = DownloadManager.Query().setFilterById(downloadId)
-        val cursor = downloadManager.query(query)
-
-        cursor.use {
-            if (it != null && it.moveToFirst()) {
-                val status = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
-                val downloaded =
-                    it.getLong(it.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
-                val total =
-                    it.getLong(it.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
-
-                val progress = if (total > 0) {
-                    ((downloaded * 100) / total).toInt()
-                } else {
-                    0
-                }
-                return Pair(progress, status)
+        return downloadManager.query(query).use { cursor ->
+            if (cursor?.moveToFirst() == true) {
+                val status = cursor.getInt(
+                    cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
+                )
+                val downloaded = cursor.getLong(
+                    cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                )
+                val total = cursor.getLong(
+                    cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+                )
+                val progress = if (total > 0) ((downloaded * 100) / total).toInt() else 0
+                Pair(progress, status)
+            } else {
+                Pair(0, -1)
             }
         }
-        return Pair(0, -1)
     }
 
+    /**
+     * 获取已下载文件的 URI
+     */
     fun getDownloadedUri(downloadId: Long): Uri? {
         return downloadManager.getUriForDownloadedFile(downloadId)
     }
 
+    // ==================== 安装相关 ====================
 
+    /**
+     * 安装已下载的 APK
+     * @param context 上下文
+     * @param downloadId 下载任务 ID
+     */
     fun installApk(context: Context, downloadId: Long) {
-        var apkFile: File? = null
-        try {
-            // 尝试将 DownloadManager 的文件复制到私有目录，以解决兼容性问题
-            val pfd = downloadManager.openDownloadedFile(downloadId)
-            val inputStream = java.io.FileInputStream(pfd.fileDescriptor)
-            val cacheDir = context.externalCacheDir ?: context.cacheDir
-            
-            // 使用 downloadId 作为文件名的一部分，防止冲突
-            val tempFile = File(cacheDir, "installer_$downloadId.apk")
-            
-            if (tempFile.exists()) {
-                tempFile.delete()
+        // Android 10+ 直接使用 DownloadManager 的 content URI，更稳定
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            downloadManager.getUriForDownloadedFile(downloadId)?.let { uri ->
+                launchInstallIntent(context, uri)
+                return
             }
-            
-            // 确保目录存在
-            tempFile.parentFile?.mkdirs()
-            
-            val outputStream = java.io.FileOutputStream(tempFile)
-            inputStream.copyTo(outputStream)
-            
-            inputStream.close()
-            outputStream.close()
-            pfd.close()
-            
-            // 设置文件为所有者可读写，其他人可读
-            tempFile.setReadable(true, false)
-            
-            apkFile = tempFile
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // 复制失败，apkFile 保持为 null
         }
 
-        if (apkFile != null && apkFile!!.exists()) {
-            if (isApkValid(context, apkFile!!)) {
-                try {
-                    launchInstallIntent(context, apkFile!!)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    "启动安装失败".toast(context)
-                }
-            } else {
-                "安装包已损坏,请重新下载".toast(context)
-                try {
-                    apkFile!!.delete()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+        // Android 9 及以下：复制到缓存目录后使用 FileProvider
+        val apkFile = copyToCache(downloadId)
+        when {
+            apkFile == null -> {
+                // 复制失败，尝试使用 DownloadManager 的 URI
+                downloadManager.getUriForDownloadedFile(downloadId)?.let { uri ->
+                    launchInstallIntent(context, uri)
+                } ?: "安装失败".toast(context)
             }
-        } else {
-            // Fallback: 如果复制失败或无法获取文件，尝试直接使用 DownloadManager 提供的 Uri
-            val uri = downloadManager.getUriForDownloadedFile(downloadId)
-            installApk(context, uri)
+            !isApkValid(context, apkFile) -> {
+                "安装包已损坏,请重新下载".toast(context)
+                apkFile.delete()
+            }
+            else -> {
+                launchInstallIntentWithFileProvider(context, apkFile)
+            }
         }
     }
 
+    /**
+     * 使用 URI 安装 APK
+     * @param context 上下文
+     * @param apkUri APK 文件的 URI
+     */
     fun installApk(context: Context, apkUri: Uri?) {
         if (apkUri == null) {
             "安装失败".toast(context)
             return
         }
 
-        // 如果是文件 Uri，尝试使用 FileProvider
+        // 文件 URI 需要转换为 FileProvider URI
         if (apkUri.scheme == "file") {
-            try {
-                val file = File(apkUri.path!!)
-                if (isApkValid(context, file)) {
-                    launchInstallIntent(context, file)
-                    return
-                } else {
-                    "安装包已损坏,请重新下载".toast(context)
-                    try {
-                        file.delete()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                    // 文件已损坏，不再进一步尝试
-                    return
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+            val file = File(apkUri.path ?: return)
+            if (!isApkValid(context, file)) {
+                "安装包已损坏,请重新下载".toast(context)
+                file.delete()
+                return
             }
+            launchInstallIntentWithFileProvider(context, file)
+            return
         }
 
-
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(apkUri, "application/vnd.android.package-archive")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // 给安装程序权限读取这个 Uri
-        }
-        try {
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            "无法启动安装程序".toast(context)
-        }
+        // Content URI 直接使用
+        launchInstallIntent(context, apkUri)
     }
 
-    private fun isApkValid(context: Context, file: File): Boolean {
-        return try {
-            val pm = context.packageManager
-            val info = pm.getPackageArchiveInfo(
-                file.absolutePath,
-                android.content.pm.PackageManager.GET_ACTIVITIES
-            )
-            info != null
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    private fun launchInstallIntent(context: Context, apkFile: File) {
-        val uri: Uri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            apkFile
-        )
-
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "application/vnd.android.package-archive")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-
-        context.startActivity(intent)
-    }
+    // ==================== 清理相关 ====================
 
     /**
      * 清除所有已下载的 APK 文件
@@ -203,20 +152,92 @@ class ApkDownloadManager(private val context: Context) {
      */
     fun clearAllDownloadedApks(): Int {
         val downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        var deletedCount = 0
+        if (!downloadDir.exists() || !downloadDir.isDirectory) return 0
 
-        if (downloadDir.exists() && downloadDir.isDirectory) {
-            val apkFiles = downloadDir.listFiles { file ->
-                file.isFile && file.name.endsWith(".apk", ignoreCase = true)
-            }
+        return downloadDir.listFiles { file ->
+            file.isFile && file.name.endsWith(".apk", ignoreCase = true)
+        }?.count { it.delete() } ?: 0
+    }
 
-            apkFiles?.forEach { file ->
-                if (file.delete()) {
-                    deletedCount++
+    // ==================== 私有方法 ====================
+
+    /**
+     * 将下载的文件复制到缓存目录
+     */
+    private fun copyToCache(downloadId: Long): File? {
+        return try {
+            val pfd = downloadManager.openDownloadedFile(downloadId)
+            val cacheDir = context.externalCacheDir ?: context.cacheDir
+            val tempFile = File(cacheDir, "installer_$downloadId.apk")
+
+            // 删除旧文件
+            if (tempFile.exists()) tempFile.delete()
+            tempFile.parentFile?.mkdirs()
+
+            // 复制文件
+            FileInputStream(pfd.fileDescriptor).use { input ->
+                FileOutputStream(tempFile).use { output ->
+                    input.copyTo(output)
+                    output.flush()
+                    output.fd.sync()
                 }
             }
-        }
+            pfd.close()
 
-        return deletedCount
+            // 设置可读权限
+            tempFile.setReadable(true, false)
+            tempFile
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * 验证 APK 文件是否有效
+     */
+    private fun isApkValid(context: Context, file: File): Boolean {
+        return try {
+            context.packageManager.getPackageArchiveInfo(
+                file.absolutePath,
+                android.content.pm.PackageManager.GET_ACTIVITIES
+            ) != null
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * 使用 FileProvider 启动安装 Intent
+     */
+    private fun launchInstallIntentWithFileProvider(context: Context, apkFile: File) {
+        try {
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}$FILE_PROVIDER_SUFFIX",
+                apkFile
+            )
+            launchInstallIntent(context, uri)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "启动安装失败".toast(context)
+        }
+    }
+
+    /**
+     * 启动安装 Intent
+     */
+    private fun launchInstallIntent(context: Context, uri: Uri) {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, APK_MIME_TYPE)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "无法启动安装程序".toast(context)
+        }
     }
 }

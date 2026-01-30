@@ -9,11 +9,11 @@ plugins {
 
 configure<funny.buildapp.plugin.PgyerConfig> {
     updateDescription = """
-        更新内容：
+                更新内容：
         1、优化应用主页样式
         2、优化下载安装流程
         3、优化详情页面展示效果
-        4、增加微信跳转小程序功能
+        4、优化微信跳转小程序功能
         ===
         isForceUpdate=true
     """.trimIndent()

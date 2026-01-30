@@ -35,7 +35,7 @@ object Constants {
      * 现货通
      */
     const val MINI_XHT_ORIGINAL_ID = "gh_3ac022f1fa38"
-    const val MINI_XHT_PATH = "/pages/index/index"
+    const val MINI_XHT_PATH = "/pages/gczx/list/index"
 
     /**
      * 钢小秘个人版

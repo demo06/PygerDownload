@@ -225,7 +225,7 @@ fun UpgradeDialog(
                     color = gray999,
                     fontSize = 14.sp,
                     lineHeight = 24.sp,
-                    textAlign = TextAlign.Center,
+                    textAlign = TextAlign.Start,
                     modifier = Modifier.padding(top = 16.dp)
                 )
 
